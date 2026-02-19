@@ -13,10 +13,10 @@ app.use(express.json());
 app.use(cors());
 app.use(helmet());
 
-// Test Route
-app.get("/", (req, res) => {
-  res.send("API Running...");
-});
+// Route
+const authRoutes = require("./routes/authRoutes");
+
+app.use("/api/auth", authRoutes);
 
 // Connect DB
 mongoose.connect(process.env.MONGO_URI)

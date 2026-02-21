@@ -1,61 +1,119 @@
-// นำเข้า User model เพื่อใช้ติดต่อกับ collection users ใน MongoDB
+// เรียกใช้ User model
 const User = require("../models/User");
 
 // bcrypt ใช้สำหรับ hash และ compare password
-// ช่วยป้องกันการเก็บรหัสผ่านแบบ plain text
 const bcrypt = require("bcryptjs");
 
-// jsonwebtoken ใช้สำหรับสร้างและตรวจสอบ JWT
-// ทำหน้าที่เป็นระบบยืนยันตัวตนแบบ stateless
+// jsonwebtoken ใช้สร้าง JWT token
 const jwt = require("jsonwebtoken");
 
-
-// ===============================
-// REGISTER FUNCTION
-// ===============================
-exports.register = async (req, res) => {
+// ==========================
+// REGISTER
+// ==========================
+const register = async (req, res) => {
   try {
-    // ดึงข้อมูลจาก body ที่ client ส่งมา
+    // รับค่าจาก body
     const { name, email, password } = req.body;
 
-    // -------------------------------
-    // 1️⃣ ตรวจสอบว่า email ซ้ำไหม
-    // -------------------------------
+    // ----------------------------
+    // 1️⃣ เช็คว่า email ซ้ำไหม
+    // ----------------------------
     const existingUser = await User.findOne({ email });
 
-    // ถ้าเจอ user ที่มี email นี้แล้ว
     if (existingUser) {
-      return res.status(400).json({ message: "Email already exists" });
+      return res.status(400).json({
+        message: "Email already exists",
+      });
     }
 
-    // -------------------------------
-    // 2️⃣ เข้ารหัส password
-    // -------------------------------
+    // ----------------------------
+    // 2️⃣ hash password
+    // ----------------------------
 
-    // สร้าง salt (ค่าที่ทำให้ hash ซับซ้อนขึ้น)
-    // 10 คือ salt rounds (ยิ่งมากยิ่งปลอดภัยแต่ช้าลง)
+    // genSalt(10) = สร้าง salt 10 รอบ
     const salt = await bcrypt.genSalt(10);
 
-    // นำ password มาผ่านกระบวนการ hash พร้อม salt
+    // เอา password ไป hash
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // -------------------------------
+    // ----------------------------
     // 3️⃣ สร้าง user ใหม่
-    // -------------------------------
+    // ----------------------------
     const user = new User({
       name,
       email,
-      password: hashedPassword // เก็บเป็น hash ไม่ใช่รหัสจริง
+      password: hashedPassword,
+      // role จะ default เป็น "user"
     });
 
     // บันทึกลง database
     await user.save();
 
-    // ส่ง response กลับ client
-    res.status(201).json({ message: "User registered successfully" });
-
+    res.status(201).json({
+      message: "User registered successfully",
+    });
   } catch (error) {
-    // ถ้าเกิด error ใด ๆ
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({
+      message: "Server error",
+    });
   }
+};
+
+// ==========================
+// LOGIN
+// ==========================
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // ----------------------------
+    // 1️⃣ หา user จาก email
+    // ----------------------------
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid credentials",
+      });
+    }
+
+    // ----------------------------
+    // 2️⃣ เช็ค password
+    // ----------------------------
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "Invalid credentials",
+      });
+    }
+
+    // ----------------------------
+    // 3️⃣ สร้าง JWT token
+    // ----------------------------
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      },
+    );
+
+    // ส่ง token กลับไปให้ client
+    res.json({ token });
+  } catch (error) {
+    console.log("LOGIN ERROR:", error); // เพิ่มบรรทัดนี้
+    res.status(500).json({
+      message: "Server error",
+    });
+  }
+};
+
+// export ออกไปให้ route ใช้
+module.exports = {
+  register,
+  login,
 };

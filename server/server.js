@@ -1,3 +1,4 @@
+require("dotenv").config();
 // ===============================
 // IMPORT LIBRARIES (นำเข้าไลบรารีที่จำเป็น)
 // ===============================
@@ -23,7 +24,7 @@ const helmet = require("helmet");
 // authMiddleware คือ middleware ที่เราสร้างเอง
 // ใช้ตรวจสอบ JWT token ก่อนเข้า route ที่ต้อง login
 const authMiddleware = require("./middleware/authMiddleware");
-
+const roleMiddleware = require("./middleware/roleMiddleware");
 
 // ===============================
 // LOAD ENVIRONMENT VARIABLES
@@ -75,7 +76,14 @@ app.get("/", (req, res) => {
   res.send("API Running...");
 });
 
-
+app.get(
+  "/api/test-owner",
+  authMiddleware,
+  roleMiddleware(["owner", "admin"]),
+  (req, res) => {
+    res.json({ message: "Owner or Admin only" });
+  }
+);
 // ===============================
 // ROUTES
 // ===============================

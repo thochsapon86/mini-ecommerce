@@ -11,9 +11,10 @@ module.exports = (...allowedRoles) => {
     // 1️⃣ เช็คก่อนว่ามี req.user ไหม
     // ----------------------------------
 
-    // req.user จะถูกใส่มาจาก authMiddleware
-    // ถ้าไม่มี แปลว่ายังไม่ได้ผ่านการ login
+    // req.user จะถูกใส่มาจาก authMiddleware ก่อนหน้านี้
+    // ถ้าไม่มี แปลว่ายังไม่ได้ผ่านการ login หรือ token ไม่ถูกต้อง
     if (!req.user) {
+      // ส่ง 401 Unauthorized หากยังไม่ได้ล็อกอิน
       return res.status(401).json({ message: "Unauthorized" });
     }
 
@@ -21,12 +22,12 @@ module.exports = (...allowedRoles) => {
     // 2️⃣ ตรวจสอบ role ของ user
     // ----------------------------------
 
-    // req.user.role มาจาก token
-    // allowedRoles คือ role ที่ route นี้อนุญาต
+    // req.user.role มาจาก payload ใน JWT (เช่น 'admin' หรือ 'user')
+    // allowedRoles คือรายการ role ที่อนุญาตให้เข้าถึง route นี้
 
-    // includes() จะเช็คว่า
-    // role ของ user อยู่ใน allowedRoles ไหม
+    // ตรวจสอบว่า role ของผู้ใช้รวมอยู่ใน allowedRoles หรือไม่
     if (!allowedRoles.includes(req.user.role)) {
+      // ถ้า role ไม่ตรง ให้ตอบ 403 Forbidden
       return res.status(403).json({
         message: "Forbidden: Access denied"
       });
@@ -35,6 +36,7 @@ module.exports = (...allowedRoles) => {
     // ----------------------------------
     // 3️⃣ ถ้าผ่านทุกอย่าง → ไปขั้นตอนถัดไป
     // ----------------------------------
+    // ถ้า role ถูกต้อง ให้เรียก next() เพื่อดำเนินการต่อ
     next();
   };
 };

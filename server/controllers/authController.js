@@ -121,8 +121,8 @@ const login = async (req, res) => {
       },
     );
 
-    // ส่ง token กลับไปให้ client ใช้ในการเรียก API ที่ต้องการการยืนยันตัวตน
-    res.json({ token });
+    // ส่ง token และข้อความยืนยันกลับไปให้ client ใช้ในการเรียก API ที่ต้องการการยืนยันตัวตน
+    res.json({ token, message: "เข้าสู่ระบบสำเร็จ" });
   } catch (error) {
     // พิมพ์ข้อผิดพลาดลง console เพื่อช่วย debug
     console.log("LOGIN ERROR:", error); // เพิ่มบรรทัดนี้

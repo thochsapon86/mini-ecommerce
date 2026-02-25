@@ -1,30 +1,19 @@
-// นำเข้า express framework
+// นำเข้า express framework และสร้าง router
 const express = require("express");
+const router = express.Router(); // แยก route เป็นโมดูลย่อย
 
-// สร้าง router object
-// Router ใช้แยก route ออกเป็น module ย่อย
-const router = express.Router();
-
-
-// ดึงฟังก์ชัน register จาก authController
-const { register } = require("../controllers/authController");
-
-// ดึงฟังก์ชัน login จาก authController
-const { login } = require("../controllers/authController");
-
+// นำเข้า controller functions สำหรับ authentication
+const { register, login } = require("../controllers/authController");
 
 // ===============================
-// ROUTES
+// ROUTES (AUTH)
 // ===============================
 
-// เมื่อมีการส่ง POST request มาที่ /register
-// จะเรียกใช้ฟังก์ชัน register ใน controller
+// POST /api/auth/register -> ลงทะเบียนผู้ใช้ใหม่
 router.post("/register", register);
 
-// เมื่อมีการส่ง POST request มาที่ /login
-// จะเรียกใช้ฟังก์ชัน login ใน controller
+// POST /api/auth/login -> ล็อกอินและรับ JWT
 router.post("/login", login);
 
-
-// export router ออกไปให้ server.js ใช้งาน
+// ส่ง router ออกไปให้ server.js ติดตั้ง
 module.exports = router;

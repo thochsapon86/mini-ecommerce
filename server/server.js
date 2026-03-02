@@ -19,6 +19,9 @@ const roleMiddleware = require("./middleware/roleMiddleware");
 const PORT = process.env.PORT || 5000; // ค่าเริ่มต้นถ้าไม่ได้ตั้งใน .env
 const MONGO_URI = process.env.MONGO_URI || "";
 
+const dns = require("dns").promises;
+dns.setServers(['8.8.8.8','1.1.1.1']);
+
 // ตรวจสอบค่าที่จำเป็น
 if (!MONGO_URI) {
   console.error("Missing MONGO_URI in environment");
@@ -43,11 +46,16 @@ app.use(helmet()); // เพิ่ม security headers
 const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
 const cartRoutes = require("./routes/cartRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+const couponRoutes = require("./routes/couponRoutes");
 
 app.use("/api/auth", authRoutes); // auth routes (register, login)
 app.use("/api/products", productRoutes); // product routes (public + owner/admin)
 app.use("/api/cart", cartRoutes); // cart routes (ต้องล็อกอิน)
-
+app.use("/api/orders", orderRoutes); // order routes (ต้องล็อกอิน)
+app.use("/api/payments", paymentRoutes); // payment routes (ต้องล็อกอิน)
+app.use("/api/coupons", couponRoutes); // coupon routes (บางอันต้องล็อกอิน บางอันไม่ต้อง)
 // ตัวอย่าง protected route ใช้ middleware ที่นำเข้ามา
 app.get("/api/protected", authMiddleware, (req, res) => {
   res.json({ message: "You are authorized!" });

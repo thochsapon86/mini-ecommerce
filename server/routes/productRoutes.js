@@ -1,8 +1,11 @@
-// สร้าง router สำหรับ product endpoints
-const express = require("express");
-const router = express.Router();
+// โมดูล router สำหรับจัดการเส้นทางที่เกี่ยวข้องกับ "สินค้า"
+// เราจะแยกกลุ่มเส้นทางนี้ออกจาก server.js เพื่อความเป็นระเบียบ
 
-// นำเข้า controller ฟังก์ชันสำหรับจัดการสินค้า
+const express = require("express");
+const router = express.Router(); // สร้างอินสแตนซ์ของ router
+
+// นำเข้าฟังก์ชัน handler ต่าง ๆ จาก productController ซึ่งแต่ละ
+// ฟังก์ชันจะรับ (req, res) และทำงานตามชื่อ
 const {
   createProduct,
   getAllProducts,
@@ -11,17 +14,29 @@ const {
   deleteProduct,
 } = require("../controllers/productController");
 
-// นำเข้า middleware สำหรับการยืนยันตัวตนและบทบาท
+// middleware ที่ใช้ตรวจสอบสถานะการล็อกอิน และสิทธิ์ของผู้ใช้
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 
-// GET /api/products -> ดูสินค้าทั้งหมด (public)
+// ----------------------------------------
+// เส้นทางสาธารณะ (ไม่ต้องล็อกอิน)
+// ----------------------------------------
+
+// GET /api/products
+// - ดึงรายการสินค้าทั้งหมดจากฐานข้อมูล
 router.get("/", getAllProducts);
 
-// GET /api/products/:id -> ดูสินค้าตาม id (public)
+// GET /api/products/:id
+// - ดึงข้อมูลสินค้าตาม id ที่ระบุใน URL
 router.get("/:id", getProductById);
 
-// POST /api/products -> สร้างสินค้า (ต้องเป็น owner หรือ admin)
+// ----------------------------------------
+// เส้นทางป้องกัน (ต้องล็อกอินและมีสิทธิ์)
+// ----------------------------------------
+
+// POST /api/products
+// - สร้างสินค้าใหม่
+// - ต้องล็อกอิน (authMiddleware) และต้องมี role เป็น owner หรือ admin
 router.post(
   "/",
   authMiddleware,
@@ -29,7 +44,10 @@ router.post(
   createProduct
 );
 
-// PUT /api/products/:id -> แก้ไขสินค้า (owner/admin)
+// PUT /api/products/:id
+// - แก้ไขสินค้าเดิม
+// - :id ระบุสินค้า
+// - ผู้ใช้ต้องเป็น owner/admin
 router.put(
   "/:id",
   authMiddleware,
@@ -37,7 +55,9 @@ router.put(
   updateProduct
 );
 
-// DELETE /api/products/:id -> ลบสินค้า (owner/admin)
+// DELETE /api/products/:id
+// - ลบสินค้า
+// - ต้องเป็น owner/admin
 router.delete(
   "/:id",
   authMiddleware,
@@ -45,4 +65,5 @@ router.delete(
   deleteProduct
 );
 
+// ส่ง router นี้ออกไปให้ server.js ใช้งาน
 module.exports = router;

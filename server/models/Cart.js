@@ -1,3 +1,11 @@
+/**
+ * Cart model
+ * คำอธิบาย: เก็บข้อมูลตะกร้าสินค้าของแต่ละผู้ใช้
+ * หลักการทำงาน:
+ * - แต่ละ `Cart` ผูกกับ `user` หนึ่งคนและมี `items` เป็น array ของสินค้า
+ * - `items` เก็บ `product` (ObjectId) และ `quantity`
+ * - ใช้เพื่อเตรียมข้อมูลก่อน checkout และสร้าง Order
+ */
 // ดึง mongoose มาใช้สร้าง Schema
 const mongoose = require("mongoose");
 

@@ -1,3 +1,12 @@
+/**
+ * Coupon model
+ * คำอธิบาย: เก็บข้อมูลคูปอง โปรโมชั่น และผู้ที่รับคูปองแล้ว
+ * หลักการทำงาน:
+ * - `code` เป็นตัวแทนคูปองที่ใช้ตรวจสอบ
+ * - `discountPercent` คำนวณส่วนลดจากราคารวม
+ * - `expiresAt` ระบุวันหมดอายุของคูปอง
+ * - `claimedUsers` เก็บลิสต์ผู้ใช้ที่รับคูปองแล้ว
+ */
 const mongoose = require("mongoose");
 
 const couponSchema = new mongoose.Schema({

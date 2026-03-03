@@ -1,3 +1,13 @@
+/**
+ * Auth controller
+ * คำอธิบาย: เก็บฟังก์ชันที่เกี่ยวกับการยืนยันตัวตน (register, login, forgot/reset password)
+ * หลักการทำงานสรุป:
+ * - `register`: ตรวจสอบ email ซ้ำ, hash password ด้วย bcrypt แล้วบันทึกผู้ใช้ใหม่
+ * - `login`: ตรวจสอบ credentials และออก JWT (บรรจุ id และ role ใน payload)
+ * - `forgotPassword`: สร้าง reset token ผ่านเมทอดของ User model และส่งลิงก์รีเซ็ต
+ * - `resetPassword`: ตรวจสอบ token (hash) กับ DB และอัปเดตรหัสผ่าน
+ * ข้อแนะนำด้านความปลอดภัย: ส่งลิงก์ผ่าน HTTPS, hash password ด้วย bcrypt
+ */
 // เรียกใช้ User model
 // นำเข้าโมเดล User เพื่อใช้ค้นหา/สร้างผู้ใช้ใน MongoDB
 const User = require("../models/User");

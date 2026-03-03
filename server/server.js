@@ -1,3 +1,12 @@
+/**
+ * Server entrypoint
+ * คำอธิบาย: ตั้งค่า Express app, ติดตั้ง middleware และ mount routes
+ * หลักการทำงาน:
+ * - โหลด environment variables (dotenv)
+ * - ติดตั้ง global middleware (json, cors, helmet)
+ * - เชื่อมต่อ MongoDB ด้วย Mongoose แล้วเริ่มฟังที่พอร์ต
+ * - แยก router ไปยังไฟล์ในโฟลเดอร์ `routes`
+ */
 // โหลดค่าตัวแปรแวดล้อมจากไฟล์ .env (เรียกครั้งเดียว)
 require("dotenv").config();
 

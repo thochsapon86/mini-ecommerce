@@ -1,3 +1,11 @@
+/**
+ * Order controller
+ * คำอธิบาย: จัดการกระบวนการ checkout และการคำนวณราคาพร้อมคูปอง
+ * หลักการทำงานสรุป:
+ * - ค้นหา cart ของผู้ใช้และคำนวณราคารวม
+ * - ตรวจสอบคูปอง (ถ้ามี) และคำนวณส่วนลด
+ * - สร้าง Order และล้าง cart
+ */
 const Order = require("../models/Order");
 const Cart = require("../models/Cart");
 const Coupon = require("../models/Coupon");

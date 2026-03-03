@@ -1,3 +1,11 @@
+/**
+ * Payment model
+ * คำอธิบาย: เก็บข้อมูลการชำระเงินของผู้ใช้
+ * หลักการทำงาน:
+ * - เก็บ `user`, `amount`, `method`, `status`, และ `transactionId`
+ * - `status` แสดงสถานะของการชำระเงิน (pending/paid/failed)
+ * - การเปลี่ยนสถานะและการสร้าง transactionId ควบคุมโดย controller
+ */
 const mongoose = require("mongoose");
 
 const paymentSchema = new mongoose.Schema({

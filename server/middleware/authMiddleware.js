@@ -1,3 +1,12 @@
+/**
+ * Auth middleware
+ * คำอธิบาย: ตรวจสอบ JWT (จาก header `Authorization: Bearer <token>`) และเติม `req.user`
+ * หลักการทำงาน:
+ * - ดึง token จาก header
+ * - ใช้ `jwt.verify` เพื่อตรวจสอบความถูกต้องและเวลาหมดอายุ
+ * - ถ้าถูกต้อง ให้บรรจุ payload ลง `req.user` เพื่อให้ controller/route ใช้งาน
+ * - ถ้าไม่ถูกต้อง ให้ตอบ 401 Unauthorized
+ */
 // นำเข้าไลบรารี jsonwebtoken เพื่อใช้ตรวจสอบและถอดรหัส JWT
 const jwt = require("jsonwebtoken"); // นำเข้าโมดูล jsonwebtoken
 

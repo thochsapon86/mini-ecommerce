@@ -1,3 +1,11 @@
+/**
+ * Product controller
+ * คำอธิบาย: จัดการตรรกะของการดำเนินการกับสินค้า (CRUD)
+ * หลักการทำงานสรุป:
+ * - `createProduct`: สร้างสินค้าใหม่ (ต้องเป็น owner/admin)
+ * - `getAllProducts` / `getProductById`: ดึงข้อมูลสินค้า (บางฟิลด์ populate createdBy)
+ * - `updateProduct` / `deleteProduct`: แก้ไขหรือลบสินค้า (สิทธิ์ตรวจสอบใน route)
+ */
 // ดึง Product model มาใช้งาน
 const Product = require("../models/Product");
 

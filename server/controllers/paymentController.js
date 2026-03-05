@@ -1,3 +1,11 @@
+/**
+ * Payment controller
+ * คำอธิบาย: จัดการการสร้างและอัปเดตสถานะการชำระเงิน
+ * หลักการทำงาน:
+ * - `createPayment`: สร้างระเบียนการชำระเงินแบบ pending
+ * - `pay`: จำลองการจ่ายเงินและเปลี่ยนสถานะเป็น paid พร้อม transactionId
+ * - `myPayments`: ดึงประวัติการชำระเงินของผู้ใช้
+ */
 const Payment = require("../models/Payment");
 
 /**

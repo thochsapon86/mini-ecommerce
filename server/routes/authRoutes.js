@@ -1,3 +1,10 @@
+/**
+ * Auth routes
+ * คำอธิบาย: เส้นทางสำหรับการลงทะเบียน, เข้าสู่ระบบ และรีเซ็ตรหัสผ่าน
+ * หลักการทำงาน:
+ * - `register` และ `login` รับข้อมูลจาก body และเรียก controller ที่เกี่ยวข้อง
+ * - ฟังก์ชัน forgot/reset password ใช้ token ที่สร้างจาก User model
+ */
 // นำเข้า express framework และสร้าง router
 const express = require("express");
 const router = express.Router(); // แยก route เป็นโมดูลย่อย

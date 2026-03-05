@@ -1,4 +1,5 @@
-// ================= IMPORT =================
+// เรียกใช้ User model
+// นำเข้าโมเดล User เพื่อใช้ค้นหา/สร้างผู้ใช้ใน MongoDB
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");

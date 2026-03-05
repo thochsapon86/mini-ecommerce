@@ -1,3 +1,11 @@
+/**
+ * Role middleware
+ * คำอธิบาย: middleware สำหรับตรวจสอบว่าผู้ใช้มีบทบาท (role) ที่อนุญาตหรือไม่
+ * หลักการทำงาน:
+ * - รับพารามิเตอร์ allowed roles เช่น roleMiddleware('admin','owner')
+ * - ตรวจสอบ `req.user` (ซึ่งควรถูกเติมโดย authMiddleware)
+ * - ถ้า role ไม่ถูกต้อง จะตอบ 403 Forbidden
+ */
 // export function ออกไปใช้งาน
 // (...allowedRoles) คือการรับ parameter ได้หลายค่า เช่น
 // roleMiddleware("admin")

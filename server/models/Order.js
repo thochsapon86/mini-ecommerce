@@ -1,3 +1,11 @@
+/**
+ * Order model
+ * คำอธิบาย: เก็บข้อมูลคำสั่งซื้อ (orders)
+ * หลักการทำงานสั้น ๆ:
+ * - เก็บ `user`, รายการสินค้า (items), ราคาก่อนลด `totalPrice`, ส่วนลด `discount`, และราคาสุทธิ `finalPrice`
+ * - สนับสนุนการเชื่อมโยงกับ `Coupon` (ถ้ามี)
+ * - ใช้ timestamps เพื่อติดตามเวลาสร้าง/อัปเดต
+ */
 const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(

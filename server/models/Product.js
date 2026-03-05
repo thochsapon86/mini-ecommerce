@@ -1,3 +1,12 @@
+/**
+ * Product model
+ * คำอธิบาย: กำหนด Mongoose schema สำหรับสินค้าในระบบ
+ * หลักการทำงานโดยย่อ:
+ * - เก็บข้อมูลชื่อ, คำอธิบาย, ราคา, สต็อก และรูปภาพ
+ * - เก็บผู้สร้างสินค้าในฟิลด์ `createdBy` เพื่อเชื่อมโยงกับ `User`
+ * - ใช้ `timestamps` เพื่อบันทึก `createdAt`/`updatedAt`
+ * หมายเหตุ: การตรวจสอบสิทธิ์ (owner/admin) ทำใน controller/route ไม่ได้ทำที่นี่
+ */
 // ดึง mongoose มาใช้งานเพื่อสร้าง Schema
 const mongoose = require("mongoose");
 

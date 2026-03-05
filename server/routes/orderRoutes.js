@@ -1,3 +1,11 @@
+/**
+ * Order routes
+ * คำอธิบาย: เส้นทางสำหรับการสร้างคำสั่งซื้อ (checkout)
+ * หลักการทำงาน:
+ * - รับคำขอ checkout จากผู้ใช้ที่ล็อกอิน
+ * - ดึง cart, คำนวณราคารวม, ใช้คูปองหากมี และสร้าง Order
+ * - ล้าง cart หลังสร้าง order สำเร็จ
+ */
 // Router สำหรับจัดการคำสั่งซื้อ (orders)
 const express = require("express");
 const router = express.Router();

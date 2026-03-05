@@ -1,3 +1,12 @@
+/**
+ * Coupon controller
+ * คำอธิบาย: สร้าง ดึง และจัดการการรับคูปอง
+ * หลักการทำงาน:
+ * - `createCoupon`: สร้างคูปอง (owner/admin)
+ * - `getCoupons`: ดึงรายการคูปอง
+ * - `claimCoupon`: ให้ผู้ใช้รับคูปอง (กันรับซ้ำโดยตรวจ claimedUsers)
+ * - `applyCoupon`: ฟังก์ชันช่วยเหลือสำหรับคำนวณส่วนลด (ใช้ภายใน flow ต่าง ๆ)
+ */
 const Coupon = require("../models/Coupon");
 
 /**

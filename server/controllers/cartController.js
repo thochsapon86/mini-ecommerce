@@ -41,99 +41,102 @@ exports.getMyCart = async (req, res) => {
 // ===============================
 exports.addToCart = async (req, res) => {
   try {
-
-    // ดึง productId และ quantity จาก body
     const { productId, quantity } = req.body;
-
-    // ตรวจสอบว่าสินค้ามีอยู่จริงไหม
     const product = await Product.findById(productId);
 
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // ค้นหา cart ของ user
-    let cart = await Cart.findOne({ user: req.user.id });
-
-    // ถ้ายังไม่มี cart ให้สร้างใหม่
-    if (!cart) {
-      cart = new Cart({
-        user: req.user.id,
-        items: [],
-      });
+    // ── เช็ค stock ──
+    if (product.stock < quantity) {
+      return res.status(400).json({ message: "สินค้าไม่เพียงพอ" });
     }
 
-    // เช็คว่าสินค้านี้อยู่ใน cart แล้วไหม
+    let cart = await Cart.findOne({ user: req.user.id });
+    if (!cart) {
+      cart = new Cart({ user: req.user.id, items: [] });
+    }
+
     const existingItem = cart.items.find(
       (item) => item.product.toString() === productId
     );
 
     if (existingItem) {
-      // ถ้ามีแล้ว ให้เพิ่มจำนวน
+      // เช็ค stock รวมกับที่มีในตะกร้าแล้ว
+      if (product.stock < quantity) {
+        return res.status(400).json({ message: "สินค้าไม่เพียงพอ" });
+      }
       existingItem.quantity += quantity;
     } else {
-      // ถ้ายังไม่มี ให้ push เข้า array
-      cart.items.push({
-        product: productId,
-        quantity,
-      });
+      cart.items.push({ product: productId, quantity });
     }
 
-    // บันทึก cart ลง database
-    await cart.save();
+    // ── หัก stock ──
+    product.stock -= quantity;
+    await product.save();
 
+    await cart.save();
     res.json(cart);
 
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
-
 // ===============================
 // 3️⃣ ลบสินค้าออกจากตะกร้า
 // ===============================
 exports.removeFromCart = async (req, res) => {
   try {
-
     const { productId } = req.body;
-
     const cart = await Cart.findOne({ user: req.user.id });
 
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
 
-    // filter เอาสินค้าที่ไม่ตรง productId ออก
+    // หาจำนวนที่อยู่ในตะกร้าก่อนลบ
+    const item = cart.items.find(
+      (item) => item.product.toString() === productId
+    );
+
+    // คืน stock
+    if (item) {
+      await Product.findByIdAndUpdate(productId, {
+        $inc: { stock: item.quantity }
+      });
+    }
+
     cart.items = cart.items.filter(
       (item) => item.product.toString() !== productId
     );
 
     await cart.save();
-
     res.json(cart);
 
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
-
 // ===============================
 // 4️⃣ ล้างตะกร้า
 // ===============================
 exports.clearCart = async (req, res) => {
   try {
-
     const cart = await Cart.findOne({ user: req.user.id });
 
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
 
-    // ทำให้ items เป็น array ว่าง
-    cart.items = [];
+    // คืน stock ทุกชิ้นก่อนเคลียร์
+    for (const item of cart.items) {
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: { stock: item.quantity }
+      });
+    }
 
+    cart.items = [];
     await cart.save();
 
     res.json({ message: "Cart cleared" });

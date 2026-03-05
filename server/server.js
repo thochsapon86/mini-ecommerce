@@ -49,6 +49,8 @@ const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const couponRoutes = require("./routes/couponRoutes");
+const userRoutes = require("./routes/userRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 app.use("/api/auth", authRoutes); // auth routes (register, login)
 app.use("/api/products", productRoutes); // product routes (public + owner/admin)
@@ -56,6 +58,8 @@ app.use("/api/cart", cartRoutes); // cart routes (ต้องล็อกอิ
 app.use("/api/orders", orderRoutes); // order routes (ต้องล็อกอิน)
 app.use("/api/payments", paymentRoutes); // payment routes (ต้องล็อกอิน)
 app.use("/api/coupons", couponRoutes); // coupon routes (บางอันต้องล็อกอิน บางอันไม่ต้อง)
+app.use("/api/users", userRoutes); // user profile routes (ต้องล็อกอิน)
+app.use("/api/admin", adminRoutes); // admin routes (ต้องล็อกอิน + role admin)
 // ตัวอย่าง protected route ใช้ middleware ที่นำเข้ามา
 app.get("/api/protected", authMiddleware, (req, res) => {
   res.json({ message: "You are authorized!" });

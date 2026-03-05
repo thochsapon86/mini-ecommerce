@@ -76,6 +76,8 @@ app.use("/api/cart", cartRoutes); // cart routes (ต้องล็อกอิ
 app.use("/api/orders", orderRoutes); // order routes (ต้องล็อกอิน)
 app.use("/api/payments", paymentRoutes); // payment routes (ต้องล็อกอิน)
 app.use("/api/coupons", couponRoutes); // coupon routes (บางอันต้องล็อกอิน บางอันไม่ต้อง)
+app.use("/api/users", userRoutes); // user profile routes (ต้องล็อกอิน)
+app.use("/api/admin", adminRoutes); // admin routes (ต้องล็อกอินและเป็น admin)
 // ตัวอย่าง protected route ใช้ middleware ที่นำเข้ามา
 app.get("/api/protected", authMiddleware, (req, res) => {
   res.json({ message: "You are authorized!" });

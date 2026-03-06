@@ -40,12 +40,12 @@ async function apiFetch(path, options = {}, token = null) {
 }
 
 // ─── TOAST ────────────────────────────────────────────────────────
-let toastCounter = 0; // ← ประกาศนอก function
+let toastCounter = 0;
 
 function useToast() {
   const [toasts, setToasts] = useState([]);
   const add = (message, type = "info") => {
-    const id = `${Date.now()}-${Math.random()}`; // ← เพิ่ม Math.random()
+    const id = ++toastCounter;
     setToasts((p) => [...p, { id, message, type }]);
     setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 3500);
   };
@@ -92,6 +92,89 @@ function Modal({ open, onClose, title, children }) {
   );
 }
 
+// ─── PRODUCT DETAIL MODAL ─────────────────────────────────────────
+function ProductModal({ product, onClose, onAddCart }) {
+  if (!product) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+        style={{ animation: "popIn 0.25s ease" }}
+      >
+        {/* Image */}
+        <div className="relative h-72 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden">
+          {product.image
+            ? <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            : <span className="text-9xl opacity-20">🖥️</span>
+          }
+          {product.stock === 0 && (
+            <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+              <span className="bg-red-100 text-red-600 font-black text-lg px-5 py-2 rounded-full">หมดสต็อก</span>
+            </div>
+          )}
+          {product.stock > 0 && product.stock <= 5 && (
+            <div className="absolute top-4 left-4">
+              <span className="bg-orange-100 text-orange-600 font-bold text-sm px-3 py-1 rounded-full">เหลือน้อย!</span>
+            </div>
+          )}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-lg text-gray-500 hover:text-gray-800 font-bold text-lg transition-colors"
+          >✕</button>
+        </div>
+
+        {/* Content */}
+        <div className="p-8">
+          <div className="flex items-start justify-between mb-3">
+            <h2 className="text-2xl font-black text-gray-900 leading-tight flex-1 mr-4">{product.name}</h2>
+            <span className={`flex-shrink-0 text-xs font-black px-3 py-1.5 rounded-full
+              ${product.stock > 5 ? "bg-green-100 text-green-700" : product.stock > 0 ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-600"}`}>
+              {product.stock > 0 ? `เหลือ ${product.stock} ชิ้น` : "หมดสต็อก"}
+            </span>
+          </div>
+
+          <p className="text-gray-500 text-sm leading-relaxed mb-6 min-h-12">
+            {product.description || "ไม่มีคำอธิบาย"}
+          </p>
+
+          {/* Info Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="bg-gray-50 rounded-xl p-3">
+              <p className="text-xs text-gray-400 font-semibold mb-1">ราคา</p>
+              <p className="text-2xl font-black text-red-600">฿{product.price?.toLocaleString()}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-3">
+              <p className="text-xs text-gray-400 font-semibold mb-1">สต็อกคงเหลือ</p>
+              <p className="text-2xl font-black text-gray-900">{product.stock} ชิ้น</p>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-4 border-t-2 border-gray-100">
+            <button
+              onClick={() => { onAddCart(product._id); onClose(); }}
+              disabled={product.stock === 0}
+              className="flex-1 py-4 bg-red-600 hover:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-black rounded-2xl text-base transition-all shadow-lg shadow-red-200 flex items-center justify-center gap-2"
+            >
+              <span>🛒</span> เพิ่มลงตะกร้า
+            </button>
+            <button
+              onClick={onClose}
+              className="px-6 py-4 border-2 border-gray-200 text-gray-600 font-bold rounded-2xl text-base hover:bg-gray-50 transition-all"
+            >
+              ปิด
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── LOADING ──────────────────────────────────────────────────────
 function LoadingSpinner() {
   return (
@@ -101,7 +184,7 @@ function LoadingSpinner() {
   );
 }
 
-// ─── INPUT / BUTTON COMPONENTS ────────────────────────────────────
+// ─── INPUT COMPONENT ──────────────────────────────────────────────
 function Input({ label, ...props }) {
   return (
     <div className="mb-4">
@@ -133,7 +216,6 @@ function Nav({ page, setPage, cartCount }) {
     <nav className="sticky top-0 z-40 bg-white border-b-2 border-gray-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => setPage("products")}>
             <div className="w-9 h-9 bg-red-600 rounded-lg flex items-center justify-center shadow-md">
               <span className="text-white text-lg font-black">T</span>
@@ -144,21 +226,18 @@ function Nav({ page, setPage, cartCount }) {
             </div>
           </div>
 
-          {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => (
               <button
                 key={item.key}
                 onClick={() => setPage(item.key)}
                 className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all
-                  ${page === item.key
-                    ? "bg-red-600 text-white shadow-md shadow-red-200"
-                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"}`}
+                  ${page === item.key ? "bg-red-600 text-white shadow-md shadow-red-200" : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"}`}
               >
                 <span className="text-base">{item.icon}</span>
                 {item.label}
                 {item.badge > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-xs font-black rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-xs font-black rounded-full flex items-center justify-center border-2 border-white">
                     {item.badge}
                   </span>
                 )}
@@ -166,20 +245,14 @@ function Nav({ page, setPage, cartCount }) {
             ))}
           </div>
 
-          {/* User + Logout */}
           <div className="hidden md:flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-xs font-black text-gray-900">{user?.role?.toUpperCase()}</p>
-            </div>
+            <p className="text-xs font-black text-gray-900">{user?.role?.toUpperCase()}</p>
             <button
               onClick={logout}
               className="px-4 py-2 rounded-lg text-sm font-bold border-2 border-gray-200 text-gray-600 hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-all"
-            >
-              ออกจากระบบ
-            </button>
+            >ออกจากระบบ</button>
           </div>
 
-          {/* Mobile menu button */}
           <button className="md:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setMobileOpen(!mobileOpen)}>
             <div className="w-5 h-0.5 bg-gray-700 mb-1" />
             <div className="w-5 h-0.5 bg-gray-700 mb-1" />
@@ -188,7 +261,6 @@ function Nav({ page, setPage, cartCount }) {
         </div>
       </div>
 
-      {/* Mobile Nav */}
       {mobileOpen && (
         <div className="md:hidden border-t border-gray-100 bg-white px-4 py-3 flex flex-col gap-1">
           {navItems.map((item) => (
@@ -210,24 +282,18 @@ function Nav({ page, setPage, cartCount }) {
 function AuthLayout({ children, title, subtitle }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-red-50 flex items-center justify-center px-4">
-      {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-red-100 rounded-full opacity-40 blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-red-50 rounded-full opacity-60 blur-3xl" />
       </div>
-
       <div className="relative w-full max-w-md" style={{ animation: "popIn 0.3s ease" }}>
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-red-600 rounded-2xl shadow-xl shadow-red-200 mb-4">
             <span className="text-white text-3xl font-black">T</span>
           </div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">
-            TECH<span className="text-red-600">ZONE</span>
-          </h1>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">TECH<span className="text-red-600">ZONE</span></h1>
           <p className="text-gray-500 text-sm mt-1 font-medium">{subtitle}</p>
         </div>
-
         <div className="bg-white rounded-3xl shadow-2xl shadow-gray-200/60 border border-gray-100 p-8">
           <h2 className="text-2xl font-black text-gray-900 mb-6">{title}</h2>
           {children}
@@ -256,14 +322,10 @@ function LoginPage({ setPage, toast }) {
     <AuthLayout title="เข้าสู่ระบบ" subtitle="ร้านค้าอุปกรณ์คอมพิวเตอร์ครบวงจร">
       <Input label="อีเมล" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="you@example.com" />
       <Input label="รหัสผ่าน" type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" />
-
-      <button
-        onClick={submit} disabled={loading}
-        className="w-full py-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold rounded-xl shadow-lg shadow-red-200 transition-all text-sm disabled:opacity-60 mt-2"
-      >
+      <button onClick={submit} disabled={loading}
+        className="w-full py-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold rounded-xl shadow-lg shadow-red-200 transition-all text-sm disabled:opacity-60 mt-2">
         {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ →"}
       </button>
-
       <div className="mt-5 flex items-center justify-between text-sm">
         <button onClick={() => setPage("register")} className="text-red-600 font-bold hover:underline">สมัครสมาชิก</button>
         <button onClick={() => setPage("forgot")} className="text-gray-400 hover:text-gray-600 font-medium">ลืมรหัสผ่าน?</button>
@@ -329,31 +391,24 @@ function ForgotPage({ setPage, toast }) {
   );
 }
 
-// ─── PRODUCTS PAGE ────────────────────────────────────────────────
-const CATEGORY_ICONS = {
-  CPU: "🔲", GPU: "🎮", RAM: "📊", SSD: "💾", Monitor: "🖥️",
-  Keyboard: "⌨️", Mouse: "🖱️", Case: "🗂️", PSU: "⚡", Cooling: "❄️",
-};
-
-function ProductCard({ p, onAddCart, onEdit, onDelete, canManage }) {
+// ─── PRODUCT CARD ─────────────────────────────────────────────────
+function ProductCard({ p, onAddCart, onEdit, onDelete, canManage, onClick }) {
   const [hover, setHover] = useState(false);
 
   return (
     <div
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className={`bg-white rounded-2xl border-2 transition-all duration-200 overflow-hidden group
+      onClick={onClick}
+      className={`bg-white rounded-2xl border-2 transition-all duration-200 overflow-hidden cursor-pointer
         ${hover ? "border-red-300 shadow-xl shadow-red-100 -translate-y-1" : "border-gray-100 shadow-sm"}`}
     >
-      {/* Image / Placeholder */}
+      {/* Image */}
       <div className="relative h-48 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden">
-        {p.image ? (
-          <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="flex flex-col items-center gap-2 opacity-30">
-            <span className="text-6xl">🖥️</span>
-          </div>
-        )}
+        {p.image
+          ? <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+          : <span className="text-6xl opacity-20">🖥️</span>
+        }
         {p.stock === 0 && (
           <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
             <span className="bg-red-100 text-red-600 font-black text-sm px-3 py-1 rounded-full">หมดสต็อก</span>
@@ -372,9 +427,7 @@ function ProductCard({ p, onAddCart, onEdit, onDelete, canManage }) {
         <p className="text-gray-400 text-sm mb-3 line-clamp-2 leading-relaxed">{p.description || "ไม่มีคำอธิบาย"}</p>
 
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <span className="text-2xl font-black text-red-600">฿{p.price?.toLocaleString()}</span>
-          </div>
+          <span className="text-2xl font-black text-red-600">฿{p.price?.toLocaleString()}</span>
           <span className={`text-xs font-bold px-2 py-1 rounded-full
             ${p.stock > 5 ? "bg-green-100 text-green-600" : p.stock > 0 ? "bg-orange-100 text-orange-600" : "bg-red-100 text-red-600"}`}>
             {p.stock > 0 ? `${p.stock} ชิ้น` : "หมด"}
@@ -383,17 +436,19 @@ function ProductCard({ p, onAddCart, onEdit, onDelete, canManage }) {
 
         <div className="flex gap-2">
           <button
-            onClick={() => onAddCart(p._id)}
+            onClick={(e) => { e.stopPropagation(); onAddCart(p._id); }}
             disabled={p.stock === 0}
             className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold rounded-xl text-sm transition-all shadow-sm shadow-red-200 flex items-center justify-center gap-1.5"
           >
             <span>🛒</span> เพิ่มลงตะกร้า
           </button>
           {canManage && (
-            <button onClick={() => onEdit(p)} className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-500 transition-colors">✏️</button>
+            <button onClick={(e) => { e.stopPropagation(); onEdit(p); }}
+              className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-500 transition-colors">✏️</button>
           )}
           {canManage && (
-            <button onClick={() => onDelete(p._id)} className="w-10 h-10 bg-red-50 hover:bg-red-100 rounded-xl flex items-center justify-center text-red-500 transition-colors">🗑️</button>
+            <button onClick={(e) => { e.stopPropagation(); onDelete(p._id); }}
+              className="w-10 h-10 bg-red-50 hover:bg-red-100 rounded-xl flex items-center justify-center text-red-500 transition-colors">🗑️</button>
           )}
         </div>
       </div>
@@ -401,12 +456,14 @@ function ProductCard({ p, onAddCart, onEdit, onDelete, canManage }) {
   );
 }
 
-function ProductsPage({ toast }) {
+// ─── PRODUCTS PAGE ────────────────────────────────────────────────
+function ProductsPage({ toast, setCartCount }) {
   const { token, user } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null); // ← Product Detail Modal
   const [form, setForm] = useState({ name: "", description: "", price: "", stock: "", image: "" });
   const [search, setSearch] = useState("");
 
@@ -439,8 +496,15 @@ function ProductsPage({ toast }) {
   };
 
   const addToCart = async (productId) => {
-    try { await apiFetch("/cart/add", { method: "POST", body: JSON.stringify({ productId, quantity: 1 }) }, token); toast.success("เพิ่มลงตะกร้าแล้ว! 🛒"); }
-    catch (e) { toast.error(e.message); }
+    try {
+      await apiFetch("/cart/add", { method: "POST", body: JSON.stringify({ productId, quantity: 1 }) }, token);
+      toast.success("เพิ่มลงตะกร้าแล้ว! 🛒");
+      // อัปเดต cartCount
+      const cart = await apiFetch("/cart", {}, token);
+      setCartCount(cart?.items?.length || 0);
+      // อัปเดต stock ในหน้า
+      load();
+    } catch (e) { toast.error(e.message); }
   };
 
   const filtered = products.filter(p =>
@@ -452,9 +516,7 @@ function ProductsPage({ toast }) {
     <div className="max-w-7xl mx-auto px-6 py-8">
       <div className="h-8 bg-gray-100 rounded-xl w-48 mb-8 animate-pulse" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {[...Array(8)].map((_, i) => (
-          <div key={i} className="bg-gray-100 rounded-2xl h-80 animate-pulse" />
-        ))}
+        {[...Array(8)].map((_, i) => <div key={i} className="bg-gray-100 rounded-2xl h-80 animate-pulse" />)}
       </div>
     </div>
   );
@@ -485,13 +547,13 @@ function ProductsPage({ toast }) {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-400 font-medium">
+        <div className="flex items-center text-sm text-gray-400 font-medium">
           <span>{filtered.length} รายการ</span>
         </div>
         {canManage && (
           <button onClick={openAdd}
             className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-red-200 flex items-center gap-2">
-            <span className="text-base">+</span> เพิ่มสินค้า
+            + เพิ่มสินค้า
           </button>
         )}
       </div>
@@ -505,10 +567,25 @@ function ProductsPage({ toast }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {filtered.map(p => (
-            <ProductCard key={p._id} p={p} onAddCart={addToCart} onEdit={openEdit} onDelete={del} canManage={canManage} />
+            <ProductCard
+              key={p._id}
+              p={p}
+              onAddCart={addToCart}
+              onEdit={openEdit}
+              onDelete={del}
+              canManage={canManage}
+              onClick={() => setSelectedProduct(p)}  // ← เปิด Modal รายละเอียด
+            />
           ))}
         </div>
       )}
+
+      {/* Product Detail Modal */}
+      <ProductModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddCart={addToCart}
+      />
 
       {/* Add/Edit Modal */}
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editProduct ? "แก้ไขสินค้า" : "เพิ่มสินค้าใหม่"}>
@@ -523,7 +600,7 @@ function ProductsPage({ toast }) {
           <button onClick={save} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition-all">
             {editProduct ? "บันทึกการเปลี่ยนแปลง" : "เพิ่มสินค้า"}
           </button>
-          <button onClick={() => setShowModal(false)} className="px-5 py-3 border-2 border-gray-200 text-gray-600 font-bold rounded-xl text-sm hover:bg-gray-50 transition-all">ยกเลิก</button>
+          <button onClick={() => setShowModal(false)} className="px-5 py-3 border-2 border-gray-200 text-gray-600 font-bold rounded-xl text-sm hover:bg-gray-50">ยกเลิก</button>
         </div>
       </Modal>
     </div>
@@ -570,9 +647,7 @@ function CartPage({ setPage, setCartCount, toast }) {
           <p className="text-gray-400 text-sm mt-1">{items.length} รายการ</p>
         </div>
         {items.length > 0 && (
-          <button onClick={clear} className="text-sm font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-lg transition-all">
-            ล้างตะกร้า
-          </button>
+          <button onClick={clear} className="text-sm font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-lg transition-all">ล้างตะกร้า</button>
         )}
       </div>
 
@@ -598,9 +673,7 @@ function CartPage({ setPage, setCartCount, toast }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-black text-gray-900 truncate">{item.product?.name || "สินค้า"}</p>
-                  <p className="text-sm text-gray-400 font-medium">
-                    ฿{item.product?.price?.toLocaleString()} × {item.quantity} ชิ้น
-                  </p>
+                  <p className="text-sm text-gray-400 font-medium">฿{item.product?.price?.toLocaleString()} × {item.quantity} ชิ้น</p>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <span className="font-black text-red-600 text-lg">฿{((item.product?.price || 0) * item.quantity).toLocaleString()}</span>
@@ -611,20 +684,17 @@ function CartPage({ setPage, setCartCount, toast }) {
             ))}
           </div>
 
-          {/* Summary */}
           <div className="bg-white rounded-2xl border-2 border-gray-100 p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <p className="text-gray-400 text-sm font-medium">ยอดรวมทั้งหมด</p>
                 <p className="text-4xl font-black text-gray-900">฿{total.toLocaleString()}</p>
               </div>
-              <div className="text-right text-sm text-gray-400">
-                <p>{items.length} รายการ</p>
-              </div>
+              <p className="text-sm text-gray-400">{items.length} รายการ</p>
             </div>
             <button onClick={() => setPage("orders")}
               className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl shadow-lg shadow-red-200 transition-all text-base flex items-center justify-center gap-2">
-              ดำเนินการสั่งซื้อ <span>→</span>
+              ดำเนินการสั่งซื้อ →
             </button>
           </div>
         </>
@@ -645,15 +715,11 @@ function OrdersPage({ toast, setPage, setPaymentAmount }) {
       const data = await apiFetch("/orders/checkout", { method: "POST", body: JSON.stringify({ couponCode: coupon || undefined }) }, token);
       const order = data.order || data;
       toast.success("สั่งซื้อสำเร็จ! 🎉");
-      
-      // ส่งราคาสุทธิไปหน้า payment แล้วเด้งไปเลย
       setPaymentAmount(order.finalPrice || order.totalPrice);
       setPage("payments");
     } catch (e) { toast.error(e.message); }
     finally { setLoading(false); }
   };
-
-  // ... โค้ดส่วน return เหมือนเดิม แค่ลบส่วน order result card ออกได้เลย
 
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
@@ -662,14 +728,12 @@ function OrdersPage({ toast, setPage, setPaymentAmount }) {
 
       <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 mb-4">
         <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">โค้ดส่วนลด (ไม่บังคับ)</label>
-        <div className="flex gap-3">
-          <input
-            className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-red-400 outline-none text-sm font-medium bg-gray-50 placeholder-gray-400"
-            placeholder="กรอกโค้ดคูปอง..."
-            value={coupon}
-            onChange={e => setCoupon(e.target.value.toUpperCase())}
-          />
-        </div>
+        <input
+          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-red-400 outline-none text-sm font-medium bg-gray-50 placeholder-gray-400"
+          placeholder="กรอกโค้ดคูปอง..."
+          value={coupon}
+          onChange={e => setCoupon(e.target.value.toUpperCase())}
+        />
         {coupon && (
           <div className="mt-3 flex items-center gap-2 text-sm text-green-600 font-semibold">
             <span>🎫</span> ใช้โค้ด: <span className="font-black bg-green-50 px-2 py-0.5 rounded-lg">{coupon}</span>
@@ -677,10 +741,8 @@ function OrdersPage({ toast, setPage, setPaymentAmount }) {
         )}
       </div>
 
-      <button
-        onClick={checkout} disabled={loading}
-        className="w-full py-4 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-black rounded-xl shadow-lg shadow-red-200 transition-all text-base"
-      >
+      <button onClick={checkout} disabled={loading}
+        className="w-full py-4 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-black rounded-xl shadow-lg shadow-red-200 transition-all text-base">
         {loading ? "กำลังดำเนินการ..." : "✓ ยืนยันการสั่งซื้อ"}
       </button>
     </div>
@@ -688,14 +750,12 @@ function OrdersPage({ toast, setPage, setPaymentAmount }) {
 }
 
 // ─── PAYMENTS PAGE ────────────────────────────────────────────────
-function PaymentsPage({ toast, initialAmount , setCartCount}) {
+function PaymentsPage({ toast, initialAmount, setCartCount }) {
   const { token } = useAuth();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [amount, setAmount] = useState(initialAmount || "");  // ← ใส่ค่าเริ่มต้นเลย
+  const [amount, setAmount] = useState(initialAmount || "");
   const [creating, setCreating] = useState(false);
-
-  // ... โค้ดส่วนอื่นเหมือนเดิม
 
   useEffect(() => { load(); }, []);
 
@@ -713,13 +773,12 @@ function PaymentsPage({ toast, initialAmount , setCartCount}) {
   };
 
   const pay = async (id) => {
-    try { 
-      await apiFetch(`/payments/${id}/pay`, { method: "POST" }, token); 
+    try {
+      await apiFetch(`/payments/${id}/pay`, { method: "POST" }, token);
       toast.success("ชำระเงินสำเร็จ! ✅");
-      setCartCount(0);  // ← เพิ่มบรรทัดนี้
-      load(); 
-    }
-    catch (e) { toast.error(e.message); }
+      setCartCount(0);
+      load();
+    } catch (e) { toast.error(e.message); }
   };
 
   if (loading) return <div className="max-w-2xl mx-auto px-6 py-8"><LoadingSpinner /></div>;
@@ -728,7 +787,6 @@ function PaymentsPage({ toast, initialAmount , setCartCount}) {
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
       <h1 className="text-3xl font-black text-gray-900 mb-8">การชำระเงิน</h1>
 
-      {/* Create Payment */}
       <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 mb-6">
         <h2 className="font-black text-gray-900 mb-4 flex items-center gap-2"><span>💳</span> สร้าง Payment ใหม่</h2>
         <div className="flex gap-3">
@@ -743,7 +801,6 @@ function PaymentsPage({ toast, initialAmount , setCartCount}) {
         </div>
       </div>
 
-      {/* Payment List */}
       {payments.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <div className="text-6xl mb-4">💳</div>
@@ -817,7 +874,7 @@ function CouponsPage({ toast }) {
         </div>
         {canCreate && (
           <button onClick={() => setShowModal(true)}
-            className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-red-200 flex items-center gap-2">
+            className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-red-200">
             + สร้างคูปอง
           </button>
         )}
@@ -836,28 +893,22 @@ function CouponsPage({ toast }) {
             return (
               <div key={c._id} className={`relative rounded-2xl border-2 p-5 overflow-hidden transition-all
                 ${expired ? "border-gray-200 bg-gray-50 opacity-60" : "border-red-100 bg-gradient-to-br from-white to-red-50 hover:border-red-300 hover:shadow-lg hover:shadow-red-100"}`}>
-                {/* Dashed left edge decoration */}
                 <div className="absolute left-0 top-4 bottom-4 w-1 border-l-2 border-dashed border-red-200" />
-
                 <div className="pl-4">
                   <div className="flex items-start justify-between mb-3">
-                    <div className="bg-red-600 text-white font-black text-xl px-3 py-1 rounded-xl tracking-widest shadow-md shadow-red-200">
-                      {c.code}
-                    </div>
+                    <div className="bg-red-600 text-white font-black text-xl px-3 py-1 rounded-xl tracking-widest shadow-md shadow-red-200">{c.code}</div>
                     <div className="text-right">
                       <span className="text-4xl font-black text-red-600 leading-none">{c.discountPercent}</span>
                       <span className="text-red-400 font-bold text-lg">%</span>
                     </div>
                   </div>
-
                   <p className="text-gray-400 text-xs font-medium mb-4">
                     {expired ? "หมดอายุ" : c.expiresAt ? `หมดอายุ: ${new Date(c.expiresAt).toLocaleDateString("th-TH")}` : "ไม่มีวันหมดอายุ"}
                   </p>
-
                   {expired ? (
                     <span className="text-sm text-gray-400 font-bold">หมดอายุแล้ว</span>
                   ) : claimed ? (
-                    <span className="flex items-center gap-1 text-sm text-green-600 font-bold"><span>✓</span> รับแล้ว</span>
+                    <span className="flex items-center gap-1 text-sm text-green-600 font-bold">✓ รับแล้ว</span>
                   ) : (
                     <button onClick={() => claim(c._id)}
                       className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition-all shadow-sm shadow-red-200">
@@ -886,7 +937,7 @@ function CouponsPage({ toast }) {
 
 // ─── PROFILE PAGE ─────────────────────────────────────────────────
 function ProfilePage({ toast }) {
-  const { token, user: authUser } = useAuth();
+  const { token } = useAuth();
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState({ name: "", password: "" });
   const [loading, setLoading] = useState(true);
@@ -915,13 +966,9 @@ function ProfilePage({ toast }) {
 
   if (loading) return <div className="max-w-lg mx-auto px-6 py-8"><LoadingSpinner /></div>;
 
-  const roleColor = { admin: "bg-red-100 text-red-700", owner: "bg-orange-100 text-orange-700", user: "bg-blue-100 text-blue-700" };
-
   return (
     <div className="max-w-lg mx-auto px-4 sm:px-6 py-8">
       <h1 className="text-3xl font-black text-gray-900 mb-8">โปรไฟล์ของฉัน</h1>
-
-      {/* Profile Card */}
       <div className="bg-gradient-to-br from-red-600 to-rose-600 rounded-3xl p-6 mb-6 text-white shadow-2xl shadow-red-200">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl font-black text-white shadow-inner">
@@ -930,18 +977,12 @@ function ProfilePage({ toast }) {
           <div>
             <p className="font-black text-xl">{profile?.name}</p>
             <p className="text-red-200 text-sm font-medium">{profile?.email}</p>
-            <span className="inline-block mt-1 bg-white/20 text-white text-xs font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-              {profile?.role}
-            </span>
+            <span className="inline-block mt-1 bg-white/20 text-white text-xs font-black px-2 py-0.5 rounded-full uppercase tracking-wider">{profile?.role}</span>
           </div>
         </div>
       </div>
-
-      {/* Edit Form */}
       <div className="bg-white rounded-2xl border-2 border-gray-100 p-6">
-        <h2 className="font-black text-gray-900 mb-5 flex items-center gap-2">
-          <span>✏️</span> แก้ไขข้อมูล
-        </h2>
+        <h2 className="font-black text-gray-900 mb-5 flex items-center gap-2"><span>✏️</span> แก้ไขข้อมูล</h2>
         <Input label="ชื่อ" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
         <Input label="รหัสผ่านใหม่ (เว้นว่างถ้าไม่เปลี่ยน)" type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" />
         <button onClick={update} disabled={saving}
@@ -1002,7 +1043,6 @@ function AdminPage({ toast }) {
         <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center text-white text-xl">⚙️</div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map((s) => (
           <div key={s.label} className={`${s.color} border-2 rounded-2xl p-4`}>
@@ -1017,7 +1057,6 @@ function AdminPage({ toast }) {
         ))}
       </div>
 
-      {/* Users Table */}
       <div className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-black text-gray-900">รายชื่อผู้ใช้ทั้งหมด</h2>
@@ -1045,9 +1084,7 @@ function AdminPage({ toast }) {
                   </td>
                   <td className="px-6 py-4 text-gray-500 text-sm font-medium">{u.email}</td>
                   <td className="px-6 py-4">
-                    <span className={`text-xs font-black px-2.5 py-1 rounded-full ${roleStyle[u.role] || "bg-gray-100 text-gray-600"}`}>
-                      {u.role}
-                    </span>
+                    <span className={`text-xs font-black px-2.5 py-1 rounded-full ${roleStyle[u.role] || "bg-gray-100 text-gray-600"}`}>{u.role}</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
@@ -1079,10 +1116,8 @@ function AdminPage({ toast }) {
           </div>
         </div>
         <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Role ใหม่</label>
-        <select
-          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-red-400 outline-none text-sm font-bold bg-gray-50 mb-5"
-          value={newRole} onChange={e => setNewRole(e.target.value)}
-        >
+        <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-red-400 outline-none text-sm font-bold bg-gray-50 mb-5"
+          value={newRole} onChange={e => setNewRole(e.target.value)}>
           {["user", "owner", "admin"].map(r => <option key={r} value={r}>{r}</option>)}
         </select>
         <div className="flex gap-3">
@@ -1103,15 +1138,15 @@ function AppInner() {
   const toast = useToast();
 
   const renderPage = () => {
-    switch(page) {
-      case "products":  return <ProductsPage toast={toast} />;
+    switch (page) {
+      case "products":  return <ProductsPage toast={toast} setCartCount={setCartCount} />;
       case "cart":      return <CartPage setPage={setPage} setCartCount={setCartCount} toast={toast} />;
       case "orders":    return <OrdersPage toast={toast} setPage={setPage} setPaymentAmount={setPaymentAmount} />;
       case "payments":  return <PaymentsPage toast={toast} initialAmount={paymentAmount} setCartCount={setCartCount} />;
       case "coupons":   return <CouponsPage toast={toast} />;
       case "profile":   return <ProfilePage toast={toast} />;
       case "admin":     return <AdminPage toast={toast} />;
-      default:          return <ProductsPage toast={toast} />;
+      default:          return <ProductsPage toast={toast} setCartCount={setCartCount} />;
     }
   };
 
@@ -1126,7 +1161,20 @@ function AppInner() {
       <Nav page={page} setPage={setPage} cartCount={cartCount} />
       <main>{renderPage()}</main>
       <ToastContainer toasts={toast.toasts} remove={toast.remove} />
-      {/* Footer เหมือนเดิม */}
+      <footer className="mt-16 border-t-2 border-gray-100 bg-white">
+        <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center">
+              <span className="text-white text-sm font-black">T</span>
+            </div>
+            <span className="font-black text-gray-900">TECH<span className="text-red-600">ZONE</span></span>
+          </div>
+          <p className="text-gray-400 text-sm font-medium">© 2025 TECHZONE · อุปกรณ์คอมพิวเตอร์ครบวงจร</p>
+          <div className="flex items-center gap-4 text-gray-400 text-sm font-medium">
+            <span>🖥️ CPU</span><span>🎮 GPU</span><span>💾 Storage</span><span>⌨️ Peripherals</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -27,7 +27,7 @@ const register = async (req, res) => {
       password: hashedPassword,
     });
 
-    await user.save();
+    await user.save(); โ
 
     res.status(201).json({
       message: "User registered successfully",
@@ -82,9 +82,9 @@ const login = async (req, res) => {
 // ================= FORGOT PASSWORD =================
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
-
+  console.log("Forgot password request for:", email);
   const user = await User.findOne({ email });
-
+  console.log("User found:", user ? "YES" : "NO"); // ← เพิ่มบรรทัดนี้
   if (!user) {
     return res.json({
       message: "Reset password link sent",
@@ -122,8 +122,9 @@ const resetPassword = async (req, res) => {
       message: "Token invalid or expired",
     });
   }
+  const salt = await bcrypt.genSalt(10);
+  user.password = await bcrypt.hash(req.body.password, salt);
 
-  user.password = req.body.password;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
 

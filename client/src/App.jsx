@@ -17,6 +17,7 @@ import PaymentsPage from "./pages/PaymentPage";
 import CouponsPage from "./pages/CouponsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage"
 
 // ─── Protected Route ──────────────────────────────────────────────
 function ProtectedRoute({ children, adminOnly = false }) {
@@ -49,7 +50,7 @@ function AppRoutes() {
       <Route path="/login" element={token ? <Navigate to="/products" replace /> : <LoginPage />} />
       <Route path="/register" element={token ? <Navigate to="/products" replace /> : <RegisterPage />} />
       <Route path="/forgot" element={token ? <Navigate to="/products" replace /> : <ForgotPage />} />
-
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       {/* Protected routes */}
       <Route path="/products" element={
         <ProtectedRoute>

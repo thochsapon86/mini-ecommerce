@@ -14,6 +14,7 @@ export default function Nav({ cartCount }) {
     { path: "/payments", label: "ชำระเงิน", icon: "💳" },
     { path: "/coupons", label: "คูปอง", icon: "🎫" },
     { path: "/profile", label: "โปรไฟล์", icon: "👤" },
+    ...(user?.role === "owner" ? [{ path: "/owner", label: "Dashboard", icon: "📊" }] : []),
     ...(user?.role === "admin" ? [{ path: "/admin", label: "Admin", icon: "⚙️" }] : []),
   ];
 

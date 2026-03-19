@@ -19,7 +19,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage"
 import BulkUploadPage from "./pages/BulkUploadPage";
-
+import OwnerDashboard from "./pages/OwnerDashboard";
 // ─── Protected Route ──────────────────────────────────────────────
 function ProtectedRoute({ children, adminOnly = false }) {
   const { token, user } = useAuth();
@@ -113,6 +113,14 @@ function AppRoutes() {
         <ProtectedRoute adminOnly>
           <Layout cartCount={cartCount}>
             <BulkUploadPage />
+          </Layout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/owner" element={
+        <ProtectedRoute>
+          <Layout cartCount={cartCount}>
+            <OwnerDashboard />
           </Layout>
         </ProtectedRoute>
       } />

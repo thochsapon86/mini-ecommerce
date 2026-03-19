@@ -1,15 +1,19 @@
 /**
- * OrdersPage.jsx
- * ─────────────────────────────────────────────────────────────────
- * หน้า Checkout สำหรับยืนยันคำสั่งซื้อ
+ * ═══════════════════════════════════════════════════════════════════
+ * OrdersPage.jsx - หน้า Checkout สำหรับยืนยันคำสั่งซื้อ
+ * ═══════════════════════════════════════════════════════════════════
+ *
  * Features:
  *   - ดึงคูปองที่ user รับแล้วมาแสดงให้เลือกได้เลย
  *   - กดเลือกคูปองแล้วนำไปใช้ได้ทันที ไม่ต้องพิมพ์โค้ด
  *   - แสดงส่วนลดและราคาสุทธิก่อนกด checkout
  *   - หลัง checkout สำเร็จ redirect ไปหน้าชำระเงินพร้อมราคา
  *
- * Props:
- *   setPaymentAmount {function} - ส่งราคาสุทธิไปหน้าชำระเงิน
+ * [FIX] apiFetch("/coupons") → apiFetch("/coupons", {}, token)
+ *       เดิมไม่ส่ง token ทำให้ถ้า backend ต้องการ auth จะ fail
+ *       หรือไม่ได้ข้อมูล user-specific กลับมา
+ *
+ * @param {function} setPaymentAmount - ส่งราคาสุทธิไปหน้าชำระเงิน
  */
 
 import { useState, useEffect } from "react";
@@ -26,7 +30,7 @@ export default function OrdersPage({ setPaymentAmount }) {
   const [loading, setLoading] = useState(false);
   const [loadingCoupons, setLoadingCoupons] = useState(true);
 
-  // คูปองทั้งหมดในระบบ
+  // คูปองที่ user รับแล้ว ยังไม่หมดอายุ และยังไม่ได้ใช้
   const [allCoupons, setAllCoupons] = useState([]);
 
   // คูปองที่ user เลือกไว้
@@ -41,18 +45,27 @@ export default function OrdersPage({ setPaymentAmount }) {
     loadCart();
   }, []);
 
-  // ดึงคูปองทั้งหมด แล้ว filter เฉพาะที่ user รับแล้วและยังไม่หมดอายุ
+  /**
+   * loadCoupons - ดึงคูปองทั้งหมด แล้ว filter เฉพาะที่ user ใช้ได้
+   *
+   * [FIX] เพิ่ม token เป็น argument ที่ 3 ของ apiFetch
+   *       เดิม: await apiFetch("/coupons")         ← ไม่ส่ง Authorization header
+   *       ใหม่: await apiFetch("/coupons", {}, token) ← ส่ง Bearer token ถูกต้อง
+   *
+   * เงื่อนไข filter คูปองที่ใช้ได้:
+   *   1. claimedUsers มี user id อยู่ (user รับคูปองแล้ว)
+   *   2. ยังไม่หมดอายุ (expiresAt > ปัจจุบัน หรือไม่มีวันหมดอายุ)
+   *   3. usedBy ไม่มี user id (ยังไม่ได้ใช้)
+   */
   const loadCoupons = async () => {
     try {
-      const data = await apiFetch("/coupons");
+      // [FIX] เพิ่ม token
+      const data = await apiFetch("/coupons", {}, token);
 
-      // filter เฉพาะคูปองที่:
-      // 1. user รับแล้ว (claimedUsers มี user id)
-      // 2. ยังไม่หมดอายุ
       const myCoupons = data.filter((c) => {
-        const claimed = c.claimedUsers?.includes(user?.id);
+        const claimed   = c.claimedUsers?.includes(user?.id);
         const notExpired = !c.expiresAt || new Date() < new Date(c.expiresAt);
-        const notUsed = !c.usedBy?.includes(user?.id); // ← เพิ่มตรงนี้
+        const notUsed   = !c.usedBy?.includes(user?.id);
         return claimed && notExpired && notUsed;
       });
 
@@ -64,7 +77,10 @@ export default function OrdersPage({ setPaymentAmount }) {
     }
   };
 
-  // ดึงยอดรวมจากตะกร้าเพื่อแสดง preview ส่วนลด
+  /**
+   * loadCart - ดึงยอดรวมจากตะกร้าเพื่อแสดง preview ส่วนลด
+   * ไม่แสดง toast error เพราะเป็นแค่ข้อมูล preview
+   */
   const loadCart = async () => {
     try {
       const cart = await apiFetch("/cart", {}, token);
@@ -78,13 +94,25 @@ export default function OrdersPage({ setPaymentAmount }) {
     }
   };
 
-  // คำนวณส่วนลดและราคาสุทธิจากคูปองที่เลือก
-  const discount = selectedCoupon
+  /**
+   * คำนวณส่วนลดและราคาสุทธิจากคูปองที่เลือก
+   *
+   * discount   = ราคารวม × เปอร์เซ็นต์ส่วนลด (ปัดลง)
+   * finalPrice = ราคารวม - ส่วนลด
+   */
+  const discount   = selectedCoupon
     ? Math.floor((cartTotal * selectedCoupon.discountPercent) / 100)
     : 0;
   const finalPrice = cartTotal - discount;
 
-  // ยืนยันการสั่งซื้อ
+  /**
+   * checkout - ยืนยันการสั่งซื้อ
+   *
+   * ขั้นตอน:
+   *   1. POST /orders/checkout พร้อม couponCode (ถ้าเลือก)
+   *   2. เมื่อสำเร็จ แสดง toast และส่งราคาสุทธิไปหน้าชำระเงิน
+   *   3. navigate ไปหน้า /payments
+   */
   const checkout = async () => {
     setLoading(true);
     try {
@@ -117,7 +145,9 @@ export default function OrdersPage({ setPaymentAmount }) {
       <h1 className="text-3xl font-black text-gray-900 mb-2">Checkout</h1>
       <p className="text-gray-400 text-sm mb-8">ยืนยันคำสั่งซื้อและชำระเงิน</p>
 
-      {/* ── เลือกคูปอง ─────────────────────────────────────── */}
+      {/* ╔════════════════════════════════════════════════════════╗ */}
+      {/* ║ ส่วนเลือกคูปอง                                        ║ */}
+      {/* ╚════════════════════════════════════════════════════════╝ */}
       <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 mb-4">
         <h2 className="font-black text-gray-900 mb-4 flex items-center gap-2">
           <span>🎫</span> คูปองของฉัน
@@ -153,10 +183,10 @@ export default function OrdersPage({ setPaymentAmount }) {
                       : "border-gray-200 hover:border-red-300 bg-white"       // ยังไม่เลือก
                     }`}
                 >
-                  {/* dashed divider ซ้าย */}
+                  {/* dashed divider ซ้าย (ตกแต่ง) */}
                   <div className="absolute left-0 top-3 bottom-3 border-l-2 border-dashed border-red-200" />
 
-                  {/* โค้ดคูปอง */}
+                  {/* โค้ดคูปอง + เปอร์เซ็นต์ */}
                   <div className="pl-3 flex-1">
                     <div className="flex items-center gap-3">
                       <span className={`font-black text-base px-2 py-0.5 rounded-lg
@@ -165,11 +195,14 @@ export default function OrdersPage({ setPaymentAmount }) {
                       </span>
                       <span className="text-2xl font-black text-red-600">{c.discountPercent}%</span>
                     </div>
+
+                    {/* วันหมดอายุ */}
                     <p className="text-xs text-gray-400 mt-1 font-medium">
                       {c.expiresAt
                         ? `หมดอายุ: ${new Date(c.expiresAt).toLocaleDateString("th-TH")}`
                         : "ไม่มีวันหมดอายุ"}
                     </p>
+
                     {/* แสดงส่วนลดที่จะได้รับถ้าเลือกคูปองนี้ */}
                     {cartTotal > 0 && (
                       <p className="text-xs text-green-600 font-bold mt-1">
@@ -190,9 +223,12 @@ export default function OrdersPage({ setPaymentAmount }) {
         )}
       </div>
 
-      {/* ── สรุปราคา ────────────────────────────────────────── */}
+      {/* ╔════════════════════════════════════════════════════════╗ */}
+      {/* ║ สรุปราคา                                               ║ */}
+      {/* ╚════════════════════════════════════════════════════════╝ */}
       {cartTotal > 0 && (
         <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 mb-4">
+          {/* ราคาสินค้า */}
           <div className="flex justify-between items-center mb-2">
             <span className="text-gray-500 text-sm font-medium">ราคาสินค้า</span>
             <span className="font-bold text-gray-900">฿{cartTotal.toLocaleString()}</span>
@@ -208,6 +244,7 @@ export default function OrdersPage({ setPaymentAmount }) {
             </div>
           )}
 
+          {/* ราคาสุทธิ */}
           <div className="border-t border-gray-100 mt-3 pt-3 flex justify-between items-center">
             <span className="font-black text-gray-900">ราคาสุทธิ</span>
             <span className="text-2xl font-black text-red-600">฿{finalPrice.toLocaleString()}</span>
@@ -215,7 +252,9 @@ export default function OrdersPage({ setPaymentAmount }) {
         </div>
       )}
 
-      {/* ── ปุ่ม Checkout ────────────────────────────────────── */}
+      {/* ╔════════════════════════════════════════════════════════╗ */}
+      {/* ║ ปุ่ม Checkout                                          ║ */}
+      {/* ╚════════════════════════════════════════════════════════╝ */}
       <button
         onClick={checkout}
         disabled={loading}

@@ -34,7 +34,8 @@ const paymentSchema = new mongoose.Schema({
 
   transactionId: {
     type: String
-  }
+  },
+  slipImage: { type: String }, // ← เพิ่ม path ของรูป slip
 
 }, { timestamps: true });
 

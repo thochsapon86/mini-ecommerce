@@ -52,7 +52,34 @@ exports.pay = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+exports.uploadSlip = async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id);
 
+    if (!payment) {
+      return res.status(404).json({ message: "Payment not found" });
+    }
+
+    // ตรวจสอบว่าเป็นเจ้าของ payment
+    if (payment.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: "กรุณาแนบรูปสลิป" });
+    }
+
+    // บันทึก path ของรูปและเปลี่ยนสถานะ
+    payment.slipImage = `/uploads/slips/${req.file.filename}`;
+    payment.status = "paid";
+    payment.transactionId = "SLIP_" + Date.now();
+    await payment.save();
+
+    res.json({ message: "อัปโหลด slip สำเร็จ", payment });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 /**
  * ดู payment ของ user

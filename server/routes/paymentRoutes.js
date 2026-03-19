@@ -15,7 +15,7 @@ const router = express.Router();
 const paymentController = require("../controllers/paymentController");
 // middleware ตรวจสอบ JWT และใส่ข้อมูลผู้ใช้ลง req.user
 const auth = require("../middleware/authMiddleware");
-
+const upload = require("../middleware/uploadMiddleware");
 // --------------------------------------------
 // สร้าง request สำหรับบันทึก payment (สถานะ pending)
 // POST /api/payments/ -> { amount }
@@ -33,6 +33,6 @@ router.post("/:id/pay", auth, paymentController.pay);
 // GET /api/payments/my
 // --------------------------------------------
 router.get("/my", auth, paymentController.myPayments);
-
+router.post("/:id/slip", auth, upload.single("slip"), paymentController.uploadSlip);
 // ส่ง router ออกให้ server.js ต่อเข้ากับแอปหลัก
 module.exports = router;

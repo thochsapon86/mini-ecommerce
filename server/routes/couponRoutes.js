@@ -1,31 +1,57 @@
 /**
- * Coupon routes
- * คำอธิบาย: เส้นทางสำหรับการจัดการคูปอง (สร้าง ดึง รับ/claim)
- * หลักการทำงาน:
- * - บาง endpoint ต้องล็อกอินและมี role ที่เหมาะสม (auth + role)
- * - `claim` จะบันทึกผู้ใช้ที่รับคูปองลงใน `claimedUsers`
+ * ========================
+ * ไฟล์ Coupon Routes
+ * ========================
+ * กำหนดเส้นทาง API สำหรับจัดการคูปอง (โค้ดส่วนลด)
+ * 
+ * ฟังก์ชัน:
+ * - สร้างคูปอง (Create - เฉพาะ owner/admin)
+ * - ดึงรายการคูปอง (Get All - Public)
+ * - รับคูปอง (Claim - ต้องล็อกอิน)
+ * 
+ * การแบ่งสิทธิ์:
+ * - POST (สร้าง): Admin/Owner only
+ * - GET (ดู): Public
+ * - POST (รับ): Login required
  */
-// Router module สำหรับจัดการเส้นทางที่เกี่ยวกับคูปอง (coupons)
-// ทุกเส้นทางในไฟล์นี้จะถูกต่อเข้ากับ base path ที่กำหนดใน server.js
 
+// ==================== นำเข้า Dependencies ====================
+
+// express - เฟรมเวิร์ก web server
 const express = require("express");
-// สร้าง router สร้างอินสแตนซ์ของ Router เพื่อแยกกลุ่มเส้นทาง
+
+// สร้าง router instance เพื่อจัดกลุ่มเส้นทาง
 const router = express.Router();
 
-// นำเข้า controller ซึ่งเก็บฟังก์ชันต่าง ๆ ที่มีตรรกะการทำงานสำหรับคูปอง
+// ==================== นำเข้า Controller ====================
+
+/**
+ * นำเข้าฟังก์ชัน controller สำหรับจัดการคูปอง
+ * จากไฟล์ couponController.js
+ */
 const couponController = require("../controllers/couponController");
-// middleware ตรวจสอบ JWT token ที่ส่งมาจาก client
+
+// ==================== นำเข้า Middleware ====================
+
+// ตรวจสอบ JWT token ของผู้ใช้
 const auth = require("../middleware/authMiddleware");
-// middleware ตรวจสอบบทบาทของผู้ใช้ (role) เช่น admin, owner เป็นต้น
+
+// ตรวจสอบบทบาท (role) ของผู้ใช้
 const role = require("../middleware/roleMiddleware");
 
-// ------------------------------------------------------------------
-// สร้างคูปองใหม่
-// เส้นทาง: POST /api/coupons/
-// ความปลอดภัย: ต้องล็อกอิน (auth) และต้องมี role เป็น "admin" หรือ "owner"
-// คำอธิบาย: เมื่อผู้ใช้ที่มีสิทธิสร้างคูปองเรียก endpoint นี้, โค้ดจะ
-// รับข้อมูลคูปองจาก req.body และเรียกฟังก์ชัน createCoupon ของ controller
-// ------------------------------------------------------------------
+// ==================== ROUTES ====================
+
+/**
+ * @route POST /api/coupons
+ * @description สร้างคูปองใหม่
+ * @access Private - Admin/Owner only
+ * @middleware auth - ตรวจสอบ JWT
+ * @middleware role("admin", "owner") - ตรวจสอบบทบาท
+ * @body {string} code - รหัสคูปอง (เช่น SUMMER20)
+ * @body {number} discountPercent - เปอร์เซ็นต์ส่วนลด (0-100)
+ * @body {string} expiresAt - วันหมดอายุ (ISO 8601 format)
+ * @response {Object} coupon - ข้อมูลคูปองที่สร้าง
+ */
 router.post(
   "/",
   auth,
@@ -33,29 +59,45 @@ router.post(
   couponController.createCoupon
 );
 
-// ------------------------------------------------------------------
-// ดึงรายการคูปองทั้งหมด
-// เส้นทาง: GET /api/coupons/
-// ความปลอดภัย: เปิดให้ทุกคน (ไม่ต้องล็อกอิน) เพื่อให้ง่ายต่อการ
-// แสดงหน้าร้านหรือหน้าคูปองทั่วไป
-// ------------------------------------------------------------------
+/**
+ * @route GET /api/coupons
+ * @description ดึงรายการคูปองทั้งหมด
+ * @access Public (ไม่ต้องล็อกอิน)
+ * @response {Array} coupons - อาร์เรย์ของคูปอง
+ * 
+ * ข้อมูลที่ส่งกลับ:
+ * - code, discountPercent, expiresAt
+ * - claimedUsers (ผู้ที่รับแล้ว)
+ */
 router.get(
   "/",
   couponController.getCoupons
 );
 
-// ------------------------------------------------------------------
-// รับคูปอง (claim) โดยผู้ใช้งาน
-// เส้นทาง: POST /api/coupons/:id/claim
-// ความปลอดภัย: ต้องล็อกอิน (auth) เพราะต้องเก็บว่าผู้ใช้ไหน claim แล้ว
-// คำอธิบาย: จะตรวจสอบว่าคูปองมีอยู่จริงหรือไม่, และอัพเดตรายการ
-// claimedUsers ของคูปองให้รวม user ที่ร้องขอด้วย
-// ------------------------------------------------------------------
+/**
+ * @route POST /api/coupons/:id/claim
+ * @description ผู้ใช้รับคูปอง
+ * @param {string} id - รหัส ID ของคูปอง
+ * @access Private (ต้องล็อกอิน)
+ * @middleware auth - ตรวจสอบ JWT
+ * @response {Object} ข้อความยืนยัน
+ * 
+ * ขั้นตอน:
+ * 1. ค้นหาคูปองจาก ID
+ * 2. ตรวจสอบว่าผู้ใช้ยังไม่ได้รับ (กันรับซ้ำ)
+ * 3. บันทึก ID ผู้ใช้ใน claimedUsers
+ * 4. บันทึก ID ผู้ใช้ใน usedBy (ตามต้องการ)
+ */
 router.post(
   "/:id/claim",
   auth,
   couponController.claimCoupon
 );
 
-// ส่ง router นี้ให้ server.js เพื่อติดตั้งลงบนแอปหลัก
+// ==================== EXPORT ====================
+
+/**
+ * ส่งออก router
+ * ใช้ใน server.js: app.use('/api/coupons', couponRoutes);
+ */
 module.exports = router;

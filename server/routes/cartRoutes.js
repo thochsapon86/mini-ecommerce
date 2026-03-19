@@ -1,45 +1,102 @@
 /**
- * Cart routes
- * คำอธิบาย: เส้นทางสำหรับจัดการตะกร้าสินค้าของผู้ใช้
- * หลักการทำงาน:
- * - ทุกเส้นทางในไฟล์นี้ต้องล็อกอินก่อน (auth)
- * - ให้ controller ทำงานกับ `req.user.id` เพื่อระบุเจ้าของ cart
+ * ========================
+ * ไฟล์ Cart Routes
+ * ========================
+ * กำหนดเส้นทาง API สำหรับจัดการตะกร้าสินค้า
+ * ต้องล็อกอินก่อน (Protected Routes)
+ * 
+ * ฟังก์ชัน:
+ * - ดูตะกร้าสินค้า (Get Cart)
+ * - เพิ่มสินค้า (Add to Cart)
+ * - ลบสินค้า (Remove from Cart)
+ * - ล้างตะกร้า (Clear Cart)
  */
-// โมดูล router สำหรับ resource "cart" หรือ "ตะกร้าสินค้า"
-// เส้นทางทั้งหมดในโฟลเดอร์นี้จะต่อท้ายด้วย /api/cart เมื่อถูกติดตั้ง
 
+// ==================== นำเข้า Dependencies ====================
+
+// express - เฟรมเวิร์ก web server
 const express = require("express");
-const router = express.Router(); // สร้าง router อินสแตนซ์
 
-// นำเข้าฟังก์ชัน controller ที่จะทำงานกับ cart
+// สร้าง router instance เพื่อจัดกลุ่มเส้นทาง
+const router = express.Router();
+
+// ==================== นำเข้า Controller ====================
+
+/**
+ * นำเข้าฟังก์ชัน controller สำหรับจัดการตะกร้า
+ * จากไฟล์ cartController.js
+ */
 const {
-  getMyCart,
-  addToCart,
-  removeFromCart,
-  clearCart,
+  getMyCart,      // ดูตะกร้า
+  addToCart,      // เพิ่มสินค้า
+  removeFromCart, // ลบสินค้า
+  clearCart,      // ล้างตะกร้า
 } = require("../controllers/cartController");
 
-// middleware ที่ใช้ตรวจสอบว่าผู้ใช้ล็อกอิน และใส่ข้อมูล user ลงใน req
+// ==================== นำเข้า Middleware ====================
+
+// ตรวจสอบ JWT token ของผู้ใช้
 const authMiddleware = require("../middleware/authMiddleware");
 
-// ------------------------------------------------------------------
-// แต่ละ route ด้านล่างนี้ต้องมีการล็อกอินก่อน (จึงใส่ authMiddleware)
-// ------------------------------------------------------------------
+// ==================== ROUTES ====================
 
-// GET /api/cart/       -> ดึงข้อมูลตะกร้าของผู้ใช้ที่ล็อกอิน
-// - controller: getMyCart จะค้นหา cart ตาม req.user.id และคืนผล
+/**
+ * @route GET /api/cart
+ * @description ดึงข้อมูลตะกร้าของผู้ใช้ที่ล็อกอิน
+ * @access Private (ต้องล็อกอิน)
+ * @middleware authMiddleware
+ * @response {Object} cart - ข้อมูลตะกร้า พร้อมรายละเอียดสินค้า
+ */
 router.get("/", authMiddleware, getMyCart);
 
-// POST /api/cart/add   -> เพิ่มสินค้าลงในตะกร้า
-// - ต้องส่ง productId และ quantity ใน body
+/**
+ * @route POST /api/cart/add
+ * @description เพิ่มสินค้าเข้าตะกร้า
+ * @access Private (ต้องล็อกอิน)
+ * @middleware authMiddleware
+ * @body {string} productId - รหัส ID ของสินค้า
+ * @body {number} quantity - จำนวนสินค้าที่ต้องการเพิ่ม
+ * @response {Object} cart - ข้อมูลตะกร้าที่อัปเดต
+ * 
+ * ขั้นตอน:
+ * 1. ตรวจสอบสินค้ามีอยู่และมีคลังเพียงพอ
+ * 2. เพิ่มเข้าตะกร้า (หรือเพิ่มจำนวนถ้ามีอยู่แล้ว)
+ * 3. หัก stock
+ */
 router.post("/add", authMiddleware, addToCart);
 
-// POST /api/cart/remove -> ลบสินค้าออกจากตะกร้า
-// - ส่ง productId ที่ต้องการลบใน body
+/**
+ * @route POST /api/cart/remove
+ * @description ลบสินค้าออกจากตะกร้า
+ * @access Private (ต้องล็อกอิน)
+ * @middleware authMiddleware
+ * @body {string} productId - รหัส ID ของสินค้าที่ต้องลบ
+ * @response {Object} cart - ข้อมูลตะกร้าที่อัปเดต
+ * 
+ * ขั้นตอน:
+ * 1. ค้นหาสินค้าในตะกร้า
+ * 2. คืน stock
+ * 3. ลบสินค้าออก
+ */
 router.post("/remove", authMiddleware, removeFromCart);
 
-// POST /api/cart/clear  -> ล้างรายการทั้งหมดในตะกร้า
+/**
+ * @route POST /api/cart/clear
+ * @description ล้างรายการสินค้าทั้งหมดในตะกร้า
+ * @access Private (ต้องล็อกอิน)
+ * @middleware authMiddleware
+ * @response {Object} ข้อความยืนยันการล้าง
+ * 
+ * ขั้นตอน:
+ * 1. คืน stock ของสินค้าทั้งหมด
+ * 2. ล้างตะกร้า
+ */
 router.post("/clear", authMiddleware, clearCart);
 
-// ส่ง router ออกไปให้ server.js ใช้งาน
+// ==================== EXPORT ====================
+
+/**
+ * ส่งออก router
+ * ใช้ใน server.js: app.use('/api/cart', cartRoutes);
+ */
 module.exports = router;

@@ -42,7 +42,8 @@ const couponSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "User"
     }
-  ]
+  ],
+  usedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // user ที่ใช้แล้ว
 
 }, { timestamps: true });
 

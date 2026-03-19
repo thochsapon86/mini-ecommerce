@@ -61,6 +61,7 @@ export default function CouponsPage() {
           {coupons.map((c) => {
             const claimed = c.claimedUsers?.includes(user?.id);
             const expired = c.expiresAt && new Date() > new Date(c.expiresAt);
+            const used = c.usedBy?.includes(user?.id);
             return (
               <div key={c._id} className={`relative rounded-2xl border-2 p-5 overflow-hidden transition-all
                 ${expired ? "border-gray-200 bg-gray-50 opacity-60" : "border-red-100 bg-gradient-to-br from-white to-red-50 hover:border-red-300 hover:shadow-lg hover:shadow-red-100"}`}>
@@ -78,6 +79,10 @@ export default function CouponsPage() {
                   </p>
                   {expired ? (
                     <span className="text-sm text-gray-400 font-bold">หมดอายุแล้ว</span>
+                  ) : used ? (
+                    <span className="flex items-center gap-1 text-sm text-gray-400 font-bold">
+                      <span>✓</span> ใช้แล้ว
+                    </span>
                   ) : claimed ? (
                     <span className="flex items-center gap-1 text-sm text-green-600 font-bold">✓ รับแล้ว</span>
                   ) : (

@@ -18,6 +18,7 @@ import CouponsPage from "./pages/CouponsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage"
+import BulkUploadPage from "./pages/BulkUploadPage";
 
 // ─── Protected Route ──────────────────────────────────────────────
 function ProtectedRoute({ children, adminOnly = false }) {
@@ -108,6 +109,13 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
 
+      <Route path="/bulk-upload" element={
+        <ProtectedRoute adminOnly>
+          <Layout cartCount={cartCount}>
+            <BulkUploadPage />
+          </Layout>
+        </ProtectedRoute>
+      } />
       {/* Fallback */}
       <Route path="*" element={<Navigate to={token ? "/products" : "/login"} replace />} />
     </Routes>

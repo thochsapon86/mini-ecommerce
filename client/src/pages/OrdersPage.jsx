@@ -52,7 +52,8 @@ export default function OrdersPage({ setPaymentAmount }) {
       const myCoupons = data.filter((c) => {
         const claimed = c.claimedUsers?.includes(user?.id);
         const notExpired = !c.expiresAt || new Date() < new Date(c.expiresAt);
-        return claimed && notExpired;
+        const notUsed = !c.usedBy?.includes(user?.id); // ← เพิ่มตรงนี้
+        return claimed && notExpired && notUsed;
       });
 
       setAllCoupons(myCoupons);

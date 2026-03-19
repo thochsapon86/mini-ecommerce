@@ -27,7 +27,7 @@ const register = async (req, res) => {
       password: hashedPassword,
     });
 
-    await user.save(); โ
+    await user.save();
 
     res.status(201).json({
       message: "User registered successfully",

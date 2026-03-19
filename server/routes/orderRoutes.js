@@ -59,6 +59,13 @@ router.post("/checkout", authMiddleware, async (req, res) => {
       coupon: couponDoc ? couponDoc._id : null,  // ← เพิ่ม
     });
 
+    if (couponDoc) {
+      await Coupon.findByIdAndUpdate(
+        couponDoc._id,
+        { $addToSet: { usedBy: req.user.id } } // addToSet กัน duplicate
+      );
+    }
+
     cart.items = [];
     await cart.save();
 

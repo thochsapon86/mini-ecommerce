@@ -110,7 +110,7 @@ function AppRoutes() {
       } />
 
       <Route path="/bulk-upload" element={
-        <ProtectedRoute adminOnly>
+        <ProtectedRoute>
           <Layout cartCount={cartCount}>
             <BulkUploadPage />
           </Layout>

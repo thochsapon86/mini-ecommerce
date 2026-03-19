@@ -12,7 +12,7 @@
  *   - progress bar แสดงความคืบหน้า
  */
 
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
@@ -29,7 +29,7 @@ const emptyProduct = () => ({
 });
 
 export default function BulkUploadPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -41,6 +41,12 @@ export default function BulkUploadPage() {
   const [progress, setProgress] = useState(0); // 0-100
   const [results, setResults] = useState([]); // ผลลัพธ์แต่ละรายการ
 
+  useEffect(() => {
+    if (user && user.role !== "owner") {
+      toast.error("เฉพาะ owner เท่านั้นที่เข้าถึงได้");
+      navigate("/products");
+    }
+  }, [user]);
   // ── แก้ไขค่าใน row ────────────────────────────────────────────
   const updateProduct = (id, field, value) => {
     setProducts(prev =>

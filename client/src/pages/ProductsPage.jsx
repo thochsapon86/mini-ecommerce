@@ -18,10 +18,19 @@ import Modal from "../components/Modal";
 import Input from "../components/Input";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ProductModal from "../components/ProductModal";
-
+// เพิ่ม useNavigate เข้าไป
 // ── ProductCard ────────────────────────────────────────────────────
-function ProductCard({ p, onAddCart, onEdit, onDelete, canManage, onClick, selectable, selected, onSelect }) {
+function ProductCard({ p, onAddCart, onEdit, onDelete, canManage, onClick, selectable, selected, onSelect, currentUser }) {
   const [hover, setHover] = useState(false);
+
+  // owner ลบ/แก้ไขได้เฉพาะสินค้าของตัวเอง
+  // admin ลบ/แก้ไขได้ทุกชิ้น
+  const isOwnerOfProduct = currentUser?.role === "owner" &&
+    (p.createdBy?._id?.toString() === currentUser?.id?.toString() ||
+      p.createdBy?.toString() === currentUser?.id?.toString());
+  console.log("createdBy:", p.createdBy, "currentUser.id:", currentUser?.id, "match:", isOwnerOfProduct);
+  const isAdmin = currentUser?.role === "admin";
+  const canEditThis = isAdmin || isOwnerOfProduct;  // แก้ไข/ลบได้ไหม
 
   return (
     <div
@@ -106,17 +115,17 @@ function ProductCard({ p, onAddCart, onEdit, onDelete, canManage, onClick, selec
           >
             <span>🛒</span> เพิ่มลงตะกร้า
           </button>
-          {canManage && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onEdit(p); }}
-              className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-500 transition-colors"
-            >✏️</button>
+          {canManage && canEditThis && (
+            <button onClick={(e) => { e.stopPropagation(); onEdit(p); }}
+              className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-500 transition-colors">
+              ✏️
+            </button>
           )}
-          {canManage && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(p._id); }}
-              className="w-10 h-10 bg-red-50 hover:bg-red-100 rounded-xl flex items-center justify-center text-red-500 transition-colors"
-            >🗑️</button>
+          {canManage && canEditThis && (
+            <button onClick={(e) => { e.stopPropagation(); onDelete(p._id); }}
+              className="w-10 h-10 bg-red-50 hover:bg-red-100 rounded-xl flex items-center justify-center text-red-500 transition-colors">
+              🗑️
+            </button>
           )}
         </div>
       </div>
@@ -142,7 +151,8 @@ export default function ProductsPage({ setCartCount }) {
   const [selectedIds, setSelectedIds] = useState([]);     // id ที่เลือกไว้
   const [bulkDeleting, setBulkDeleting] = useState(false); // กำลังลบอยู่
 
-  const canManage = user?.role === "admin" || user?.role === "owner";
+  const canAdd = user?.role === "owner";           // เพิ่มสินค้าได้เฉพาะ owner
+  const canEdit = user?.role === "admin" || user?.role === "owner"; // แก้ไข/ลบได้ทั้งคู่
 
   useEffect(() => { load(); }, []);
 
@@ -188,16 +198,39 @@ export default function ProductsPage({ setCartCount }) {
 
   // toggle เลือก/ยกเลิก id เดียว
   const toggleSelect = (id) => {
+    // หาสินค้าที่จะเลือก
+    const product = products.find(p => p._id === id);
+
+    // เช็คสิทธิ์
+    if (user?.role === "owner") {
+      const isOwn = product?.createdBy?._id?.toString() === user?.id?.toString() ||
+        product?.createdBy?.toString() === user?.id?.toString();
+      if (!isOwn) {
+        toast.error("ไม่มีสิทธิ์ลบสินค้านี้");
+        return;
+      }
+    }
+
     setSelectedIds(prev =>
       prev.includes(id)
-        ? prev.filter(i => i !== id)  // ยกเลิก
-        : [...prev, id]                // เลือก
+        ? prev.filter(i => i !== id)
+        : [...prev, id]
     );
   };
 
   // เลือกทั้งหมดในหน้าปัจจุบัน (filtered)
+  // เลือกทั้งหมดเฉพาะที่มีสิทธิ์ลบ
   const selectAll = () => {
-    setSelectedIds(filtered.map(p => p._id));
+    const deletable = filtered.filter(p => {
+      if (user?.role === "admin") return true; // admin ลบได้ทุกชิ้น
+      if (user?.role === "owner") {
+        // owner ลบได้เฉพาะของตัวเอง
+        return p.createdBy?._id?.toString() === user?.id?.toString() ||
+          p.createdBy?.toString() === user?.id?.toString();
+      }
+      return false;
+    });
+    setSelectedIds(deletable.map(p => p._id));
   };
 
   // ยกเลิกทั้งหมด
@@ -220,8 +253,18 @@ export default function ProductsPage({ setCartCount }) {
     let successCount = 0;
     let failCount = 0;
 
-    // ลบทีละรายการ loop
     for (const id of selectedIds) {
+      // เช็คสิทธิ์อีกรอบก่อนลบจริง
+      const product = products.find(p => p._id === id);
+      if (user?.role === "owner") {
+        const isOwn = product?.createdBy?._id?.toString() === user?.id?.toString() ||
+          product?.createdBy?.toString() === user?.id?.toString();
+        if (!isOwn) {
+          failCount++;
+          continue; // ข้ามไปสินค้าถัดไป
+        }
+      }
+
       try {
         await apiFetch(`/products/${id}`, { method: "DELETE" }, token);
         successCount++;
@@ -232,7 +275,7 @@ export default function ProductsPage({ setCartCount }) {
 
     setBulkDeleting(false);
     exitSelectMode();
-    load(); // โหลดรายการใหม่
+    load();
 
     if (failCount === 0) {
       toast.success(`ลบสำเร็จ ${successCount} รายการ 🗑️`);
@@ -353,36 +396,27 @@ export default function ProductsPage({ setCartCount }) {
 
         <span className="flex items-center text-sm text-gray-400 font-medium">{filtered.length} รายการ</span>
 
-        {canManage && (
+        {/* ปุ่มเพิ่มสินค้า + Bulk Upload — เฉพาะ owner */}
+        {canAdd && (
           <div className="flex gap-2 flex-wrap">
-            {/* ปุ่มเพิ่มสินค้า */}
-            <button
-              onClick={openAdd}
-              className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-red-200"
-            >
+            <button onClick={openAdd}
+              className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-red-200">
               + เพิ่มสินค้า
             </button>
-
-            {/* ปุ่ม Upload จำนวนมาก */}
-            <button
-              onClick={() => navigate("/bulk-upload")}
-              className="px-5 py-3 border-2 border-red-200 text-red-600 font-bold rounded-xl text-sm hover:bg-red-50 transition-all"
-            >
+            <button onClick={() => navigate("/bulk-upload")}
+              className="px-5 py-3 border-2 border-red-200 text-red-600 font-bold rounded-xl text-sm hover:bg-red-50 transition-all">
               📦 Upload จำนวนมาก
             </button>
-
-            {/* ปุ่มเลือกเพื่อลบ */}
-            <button
-              onClick={() => { setSelectMode(!selectMode); setSelectedIds([]); }}
-              className={`px-5 py-3 font-bold rounded-xl text-sm transition-all border-2
-                ${selectMode
-                  ? "bg-red-600 text-white border-red-600"
-                  : "border-gray-200 text-gray-600 hover:border-red-200 hover:text-red-600 hover:bg-red-50"
-                }`}
-            >
-              {selectMode ? "✕ ออกจากโหมดเลือก" : "☑️ เลือกเพื่อลบ"}
-            </button>
           </div>
+        )}
+
+        {/* ปุ่มเลือกเพื่อลบ — ทั้ง owner และ admin */}
+        {canEdit && (
+          <button onClick={() => { setSelectMode(!selectMode); setSelectedIds([]); }}
+            className={`px-5 py-3 font-bold rounded-xl text-sm transition-all border-2
+      ${selectMode ? "bg-red-600 text-white border-red-600" : "border-gray-200 text-gray-600 hover:border-red-200 hover:text-red-600 hover:bg-red-50"}`}>
+            {selectMode ? "✕ ออกจากโหมดเลือก" : "☑️ เลือกเพื่อลบ"}
+          </button>
         )}
       </div>
 
@@ -401,9 +435,10 @@ export default function ProductsPage({ setCartCount }) {
               onAddCart={addToCart}
               onEdit={openEdit}
               onDelete={del}
-              canManage={canManage}
-              onClick={() => !selectMode && setSelectedProduct(p)} // ถ้า selectMode เปิดอยู่ คลิกแล้วเลือก
-              selectable={selectMode && canManage}
+              canManage={canEdit}
+              currentUser={user}  // ← เพิ่มตรงนี้
+              onClick={() => !selectMode && setSelectedProduct(p)}
+              selectable={selectMode && canEdit}
               selected={selectedIds.includes(p._id)}
               onSelect={toggleSelect}
             />

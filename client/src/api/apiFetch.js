@@ -13,7 +13,7 @@
  */
 
 // URL หลักของ Backend API
-const API = "http://localhost:5000/api";
+const API = "https://techzone-api-miq9.onrender.com/";
 
 /**
  * apiFetch - ฟังก์ชันสำหรับเรียก API

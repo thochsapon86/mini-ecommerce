@@ -46,7 +46,7 @@ export default function Nav({ cartCount }) {
     { path: "/payments", label: "ชำระเงิน", icon: "💳" },
     { path: "/coupons", label: "คูปอง", icon: "🎫" },
     { path: "/profile", label: "โปรไฟล์", icon: "👤" },
-    
+    { path: "/my-orders", label: "ติดตามออเดอร์", icon: "📦" },
     // เพิ่ม Dashboard ถ้า role = "owner"
     ...(user?.role === "owner" ? [{ path: "/owner", label: "Dashboard", icon: "📊" }] : []),
     

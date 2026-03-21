@@ -41,8 +41,26 @@ const orderSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending", "confirmed", "shipping", "delivered", "cancelled"],
+      enum: ["pending", "confirmed", "shipping", "cancel_requested", "cancelled", "delivered"],
       default: "pending"
+    },
+
+    // User กดยืนยันรับแล้วหรือยัง
+    userConfirmedDelivery: {
+      type: Boolean,
+      default: false
+    },
+
+    // Owner กดยืนยันส่งสำเร็จแล้วหรือยัง
+    ownerConfirmedDelivery: {
+      type: Boolean,
+      default: false
+    },
+
+    // เหตุผลยกเลิก
+    cancelReason: {
+      type: String,
+      default: ""
     }
 
   },

@@ -37,6 +37,7 @@ import AdminPage from "./pages/AdminPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage"
 import BulkUploadPage from "./pages/BulkUploadPage";
 import OwnerDashboard from "./pages/OwnerDashboard";
+import MyOrdersPage from "./pages/MyOrdersPage";
 
 /**
  * ═══════════════════════════════════════════════════════════════════
@@ -57,13 +58,13 @@ import OwnerDashboard from "./pages/OwnerDashboard";
  */
 function ProtectedRoute({ children, adminOnly = false }) {
   const { token, user } = useAuth();
-  
+
   // ขั้นตอน 1: ตรวจสอบ token (ถ้าไม่มี = ไม่ได้ล็อกอิน)
   if (!token) return <Navigate to="/login" replace />;
-  
+
   // ขั้นตอน 2: ตรวจสอบ admin role หากต้องการ
   if (adminOnly && user?.role !== "admin") return <Navigate to="/products" replace />;
-  
+
   // ขั้นตอน 3: ทุกอย่างผ่าน ให้แสดง children
   return children;
 }
@@ -90,10 +91,10 @@ function Layout({ children, cartCount }) {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* ส่วน Header: Navigation bar */}
       <Nav cartCount={cartCount} />
-      
+
       {/* ส่วน Main: Content หลักของเพจ (ยืดขยายให้เต็ม space) */}
       <main className="flex-1">{children}</main>
-      
+
       {/* ส่วน Footer: ข้อมูลด้านล่าง */}
       <Footer />
     </div>
@@ -125,23 +126,23 @@ function AppRoutes() {
       {/* ═════════════════════════════════════════════════════════ */}
       {/* PUBLIC ROUTES - ไม่ต้องล็อกอิน (สำหรับผู้ที่ยังไม่เข้าสู่ระบบ) */}
       {/* ═════════════════════════════════════════════════════════ */}
-      
+
       {/* เข้าสู่ระบบ - ถ้าล็อกอิน จะพุ่งไป /products */}
       <Route path="/login" element={token ? <Navigate to="/products" replace /> : <LoginPage />} />
-      
+
       {/* สมัครสมาชิก - ถ้าล็อกอิน จะพุ่งไป /products */}
       <Route path="/register" element={token ? <Navigate to="/products" replace /> : <RegisterPage />} />
-      
+
       {/* ลืมรหัสผ่าน - ถ้าล็อกอิน จะพุ่งไป /products */}
       <Route path="/forgot" element={token ? <Navigate to="/products" replace /> : <ForgotPage />} />
-      
+
       {/* รีเซ็ตรหัสผ่าน - ไม่ต้องล็อกอิน (ลิงก์จากอีเมล) */}
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
       {/* ═════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES - ต้องล็อกอิน */}
       {/* ═════════════════════════════════════════════════════════ */}
-      
+
       {/* หน้าสินค้า - ดูรายชื่อสินค้า */}
       <Route path="/products" element={
         <ProtectedRoute>
@@ -222,7 +223,14 @@ function AppRoutes() {
           </Layout>
         </ProtectedRoute>
       } />
-      
+      {/* My Orders - ดูคำสั่งซื้อของตัวเอง */}
+      <Route path="/my-orders" element={
+        <ProtectedRoute>
+          <Layout cartCount={cartCount}>
+            <MyOrdersPage />
+          </Layout>
+        </ProtectedRoute>
+      } />
       {/* Fallback Route - ถ้า URL ไม่ตรงกับเส้นทางไหน */}
       {/* ถ้าล็อกอิน ให้พุ่งไป /products ถ้าไม่ ให้พุ่งไป /login */}
       <Route path="*" element={<Navigate to={token ? "/products" : "/login"} replace />} />

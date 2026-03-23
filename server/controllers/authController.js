@@ -198,13 +198,14 @@ const login = async (req, res) => {
  * @returns {Object} ข้อความยืนยันว่าส่งลิงก์ไปแล้ว
  */
 const forgotPassword = async (req, res) => {
+  console.log("🔥 forgotPassword called", req.body); // เพิ่มตรงนี้
   try {
     // ดึงอีเมลจาก request body
     const { email } = req.body;
 
     // ค้นหาผู้ใช้ที่มีอีเมลตรงกับที่ส่งมา
     const user = await User.findOne({ email });
-
+    console.log("👤 user found:", user ? user.email : "NOT FOUND"); // เพิ่มตรงนี้
     // ==================== การตรวจสอบด้านความปลอดภัย ====================
     /**
      * เหตุผล: ถ้าส่งข้อมูลต่างกันเมื่ออีเมลไม่มีอยู่
@@ -214,7 +215,8 @@ const forgotPassword = async (req, res) => {
     if (!user) {
       return res.json({ message: "Reset password link sent" });
     }
-
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
     // ==================== สร้าง Reset Token ====================
     // เรียกฟังก์ชัน getResetPasswordToken จากโมเดล User
     // ฟังก์ชันนี้สร้าง token และบันทึกลงในฐานข้อมูล
@@ -264,7 +266,12 @@ const forgotPassword = async (req, res) => {
       user.resetPasswordToken = undefined;       // ล้าง token
       user.resetPasswordExpire = undefined;      // ล้างเวลาหมดอายุ
       await user.save({ validateBeforeSave: false });
-
+      console.error("EMAIL ERROR:", err.message);
+      console.error("EMAIL CONFIG:", {
+        user: process.env.GMAIL_USER,
+        hasPass: !!process.env.GMAIL_PASS,
+        clientUrl: process.env.CLIENT_URL,
+      });
       // บันทึก error log
       console.error("Email error:", err);
 

@@ -34,10 +34,12 @@ const nodemailer = require("nodemailer");
  * ข้อมูลการเชื่อมต่อจะเก็บไว้ใน environment variables (.env)
  */
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
-    user: process.env.GMAIL_USER,     // อีเมลที่ใช้ส่ง
-    pass: process.env.GMAIL_PASS,     // รหัสผ่านแอป Gmail
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
   },
 });
 

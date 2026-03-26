@@ -230,7 +230,8 @@ const forgotPassword = async (req, res) => {
 
     // ==================== สร้าง Reset URL ====================
     // สร้าง URL ที่มี token เพื่อส่งไปให้ผู้ใช้
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+    const baseUrl = process.env.CLIENT_URL.replace(/\/$/, "");
+    const resetUrl = `${baseUrl}/reset-password/${resetToken}`;
     console.log("====================================");
     console.log("RESET PASSWORD LINK:");
     console.log(resetUrl);

@@ -37,20 +37,24 @@ const API = "https://techzone-api-miq9.onrender.com/api";
 export async function apiFetch(path, options = {}, token = null) {
   // ขั้นตอนที่ 1: สร้าง headers พื้นฐาน
   const headers = { "Content-Type": "application/json" };
-  
+
   // ขั้นตอนที่ 2: เพิ่ม Authorization header ถ้ามี token
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  
+
   // ขั้นตอนที่ 3: เรียก fetch API
   const res = await fetch(`${API}${path}`, { ...options, headers });
-  
+
   // ขั้นตอนที่ 4: แปลง response เป็น JSON
   const data = await res.json();
-  
+
   // ขั้นตอนที่ 5: ตรวจสอบสถานะและโยนข้อผิดพลาด
   // res.ok จะเป็น true ถ้า status code ระหว่าง 200-299
-  if (!res.ok) throw new Error(data.message || "Error");
-  
+  if (!res.ok) {
+    const err = new Error(data.message || "Error");
+    err.status = res.status; // ← มีบรรทัดนี้ไหม?
+    throw err;
+  }
+
   // ขั้นตอนที่ 6: คืนข้อมูลสำเร็จ
   return data;
 }

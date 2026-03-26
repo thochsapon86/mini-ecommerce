@@ -34,13 +34,13 @@ export default function LoginPage() {
   // ดึง login function จาก AuthContext
   const { login } = useAuth();
   const navigate = useNavigate();
-  
+
   // useValidation hook สำหรับ validate form
   const { errors, validate } = useValidation();
-  
+
   // State ของฟอร์ม: email, password
   const [form, setForm] = useState({ email: "", password: "" });
-  
+
   // State สำหรับแสดง loading (ขณะส่ง API)
   const [loading, setLoading] = useState(false);
 
@@ -87,25 +87,28 @@ export default function LoginPage() {
     setLoading(true);
     try {
       // ขั้นตอนที่ 3: ส่ง POST request ไปยัง /auth/login
-      const data = await apiFetch("/auth/login", { 
-        method: "POST", 
-        body: JSON.stringify(form) 
+      const data = await apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify(form)
       });
-      
+
       // ขั้นตอนที่ 4: บันทึก token ด้วย login() function
       login(data.token);
-      
+
       // ขั้นตอนที่ 5: แสดง toast สำเร็จ
       toast.success("เข้าสู่ระบบสำเร็จ!");
-      
+
       // ขั้นตอนที่ 6: Redirect ไปหน้า /products
       navigate("/products");
     } catch (e) {
-      // ถ้ามี error แสดง toast error
-      toast.error("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
-    } finally { 
+      if (e.status === 429) {
+        toast.error("ลองใหม่อีกครั้งในอีก 2 นาที");
+      } else {
+        toast.error("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+      }
+    } finally {
       // ตั้ง loading = false เพื่อ enable ปุ่มใหม่
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
@@ -115,12 +118,12 @@ export default function LoginPage() {
       {/* ฟิลด์ Email - พร้อม error message */}
       {/* ═════════════════════════════════════════════════════════== */}
       <div className="mb-4">
-        <Input 
-          label="อีเมล" 
-          type="email" 
+        <Input
+          label="อีเมล"
+          type="email"
           value={form.email}
           onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-          placeholder="you@example.com" 
+          placeholder="you@example.com"
         />
         {/* แสดง error message ถ้ามี error */}
         {errors.email && (
@@ -134,14 +137,14 @@ export default function LoginPage() {
       {/* ฟิลด์ Password - พร้อม error message */}
       {/* ═════════════════════════════════════════════════════════== */}
       <div className="mb-2">
-        <Input 
-          label="รหัสผ่าน" 
-          type="password" 
+        <Input
+          label="รหัสผ่าน"
+          type="password"
           value={form.password}
           onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
           placeholder="••••••••"
           // ถ้ากด Enter ให้ส่งฟอร์ม
-          onKeyDown={e => e.key === "Enter" && submit()} 
+          onKeyDown={e => e.key === "Enter" && submit()}
         />
         {/* แสดง error message ถ้ามี error */}
         {errors.password && (
@@ -154,8 +157,8 @@ export default function LoginPage() {
       {/* ═════════════════════════════════════════════════════════== */}
       {/* ปุ่มส่งฟอร์ม */}
       {/* ═════════════════════════════════════════════════════════== */}
-      <button 
-        onClick={submit} 
+      <button
+        onClick={submit}
         disabled={loading}
         className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl 
                    shadow-lg shadow-red-200 transition-all text-sm disabled:opacity-60 mt-2"

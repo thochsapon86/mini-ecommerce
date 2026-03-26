@@ -34,7 +34,7 @@ const helmet = require("helmet");
 // local middleware
 // `authMiddleware` - middleware ภายในโปรเจค: ตรวจสอบ JWT และเติม `req.user`
 const authMiddleware = require("./middleware/authMiddleware");
-
+const rateLimit = require("express-rate-limit");
 // -------------------------------
 // Config
 // -------------------------------
@@ -53,12 +53,53 @@ if (!MONGO_URI) {
 // App setup
 // -------------------------------
 const app = express();
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://techzone-store.netlify.app",
+];
+app.set("trust proxy", 1); // ถ้าแอปอยู่หลัง reverse proxy เช่น Heroku หรือ Render ให้ตั้งค่านี้เพื่อให้ req.ip ถูกต้อง
 
-app.use(express.json());
+app.use(express.json({ limit: "10kb" }));
 app.use("/uploads", express.static("uploads"));
-app.use(cors());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+}));
 app.use(helmet());
 
+// ── Rate Limiting ─────────────────────────────────────────────────
+// Global: ทุก API ไม่เกิน 100 ครั้ง / 15 นาที
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { message: "Too many requests, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Auth: login/register ไม่เกิน 10 ครั้ง / 15 นาที
+const authLimiter = rateLimit({
+  windowMs: 2 * 60 * 1000,
+  max: 10,
+  message: { message: "Too many attempts, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.post("/api/auth/login", (req, res, next) => {
+  console.log("IP:", req.ip);
+  next();
+}, authLimiter);
+app.post("/api/auth/register", authLimiter);
+app.use("/api", globalLimiter);
 // -------------------------------
 // Routes
 // -------------------------------

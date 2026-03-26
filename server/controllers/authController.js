@@ -25,6 +25,8 @@ const crypto = require("crypto");
 
 // nodemailer - ใช้สำหรับส่งอีเมลถึงผู้ใช้
 const nodemailer = require("nodemailer");
+// resend - ใช้สำหรับส่งอีเมลผ่านบริการ Resend (ถ้าใช้แทน nodemailer)
+const { Resend } = require("resend");
 
 // ==================== ตั้งค่า Email Transporter ====================
 
@@ -44,7 +46,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-
+const resend = new Resend(process.env.RESEND_API_KEY);
 // ==================== ฟังก์ชัน REGISTER ====================
 
 /**
@@ -233,62 +235,102 @@ const forgotPassword = async (req, res) => {
     console.log("RESET PASSWORD LINK:");
     console.log(resetUrl);
     console.log("====================================");
+    // ==================== ส่งอีเมล ====================
+    try {
+      // ✅ ส่งผ่าน Resend
+      await resend.emails.send({
+        from: process.env.EMAIL_FROM,
+        to: user.email,
+        subject: "รีเซ็ตรหัสผ่าน TECHZONE",
+        html: `
+          <div style="font-family:sans-serif; max-width:520px; margin:auto; padding:24px;">
+            <h2>TECHZONE 🖥️</h2>
+            <p>สวัสดี ${user.name}</p>
+            <p>กดปุ่มด้านล่างเพื่อรีเซ็ตรหัสผ่าน</p>
+            <a href="${resetUrl}" 
+               style="display:inline-block; margin-top:20px; padding:12px 24px; background:red; color:white; text-decoration:none;">
+              Reset Password
+            </a>
+            <p style="margin-top:20px;">ลิงก์หมดอายุใน 10 นาที</p>
+          </div>
+        `,
+      });
 
-    res.json({ message: "Reset password link sent" });
-    // try {
-    //   // ==================== ส่งอีเมล ====================
-    //   await transporter.sendMail({
-    //     from: `"TECHZONE" <${process.env.GMAIL_USER}>`, // ผู้ส่ง
-    //     to: user.email,                                   // ผู้รับ
-    //     subject: "รีเซ็ตรหัสผ่าน TECHZONE",              // หัวเรื่อง
-    //     html: `
-    //       <div style="font-family:sans-serif; max-width:520px; margin:auto; padding:24px; border:1px solid #eee; border-radius:12px;">
-    //         <h2 style="color:#dc2626;">TECHZONE 🖥️</h2>
-    //         <p>สวัสดี <strong>${user.name}</strong></p>
-    //         <p>คุณได้ขอรีเซ็ตรหัสผ่าน กดปุ่มด้านล่างเพื่อตั้งรหัสผ่านใหม่</p>
-    //         <div style="text-align:center; margin:32px 0;">
-    //           <a href="${resetUrl}"
-    //              style="background:#dc2626; color:white; padding:14px 32px; border-radius:10px; text-decoration:none; font-weight:700;">
-    //             รีเซ็ตรหัสผ่าน →
-    //           </a>
-    //         </div>
-    //         <p style="color:#888; font-size:13px;">⚠️ ลิงก์หมดอายุใน 10 นาที</p>
-    //         <p style="color:#888; font-size:13px;">ถ้าไม่ได้ขอ ไม่ต้องสนใจอีเมลนี้</p>
-    //       </div>
-    //     `,
-    //   });
+      console.log("✉️ Email sent via Resend");
 
-    //   // บันทึก log เพื่อวัตถุประสงค์ในการดีบัก
-    //   console.log("✉️ Email sent to:", user.email);
+      return res.json({ message: "Reset password link sent" });
 
-    //   // ส่งการตอบสนองดำเนินการสำเร็จ
-    //   res.json({ message: "Reset password link sent" });
+    } catch (err) {
+      console.error("EMAIL ERROR:", err);
 
-    // } catch (err) {
-    //   // ==================== การจัดการข้อผิดพลาดในการส่งอีเมล ====================
-    //   /**
-    //    * หากการส่งอีเมลล้มเหลว จะล้างการเก็บ token ที่สร้างไว้
-    //    * เพื่อไม่ให้ผู้ใช้สามารถใช้ token ที่ไม่ได้รับอีเมลได้
-    //    */
-    //   user.resetPasswordToken = undefined;       // ล้าง token
-    //   user.resetPasswordExpire = undefined;      // ล้างเวลาหมดอายุ
-    //   await user.save({ validateBeforeSave: false });
-    //   console.error("EMAIL ERROR:", err.message);
-    //   console.error("EMAIL CONFIG:", {
-    //     user: process.env.GMAIL_USER,
-    //     hasPass: !!process.env.GMAIL_PASS,
-    //     clientUrl: process.env.CLIENT_URL,
-    //   });
-    //   // บันทึก error log
-    //   console.error("Email error:", err);
+      // rollback token
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save({ validateBeforeSave: false });
 
-    //   // ส่งข้อมูลข้อผิดพลาด
-    //   res.status(500).json({ message: "ส่งอีเมลไม่สำเร็จ กรุณาลองใหม่" });
-    // }
+      return res.status(500).json({
+        message: "ส่งอีเมลไม่สำเร็จ",
+      });
+    }
+
   } catch (error) {
     console.error("Forgot password error:", error);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
+  //   try {
+  //     // ==================== ส่งอีเมล ====================
+  //     await transporter.sendMail({
+  //       from: `"TECHZONE" <${process.env.GMAIL_USER}>`, // ผู้ส่ง
+  //       to: user.email,                                   // ผู้รับ
+  //       subject: "รีเซ็ตรหัสผ่าน TECHZONE",              // หัวเรื่อง
+  //       html: `
+  //         <div style="font-family:sans-serif; max-width:520px; margin:auto; padding:24px; border:1px solid #eee; border-radius:12px;">
+  //           <h2 style="color:#dc2626;">TECHZONE 🖥️</h2>
+  //           <p>สวัสดี <strong>${user.name}</strong></p>
+  //           <p>คุณได้ขอรีเซ็ตรหัสผ่าน กดปุ่มด้านล่างเพื่อตั้งรหัสผ่านใหม่</p>
+  //           <div style="text-align:center; margin:32px 0;">
+  //             <a href="${resetUrl}"
+  //                style="background:#dc2626; color:white; padding:14px 32px; border-radius:10px; text-decoration:none; font-weight:700;">
+  //               รีเซ็ตรหัสผ่าน →
+  //             </a>
+  //           </div>
+  //           <p style="color:#888; font-size:13px;">⚠️ ลิงก์หมดอายุใน 10 นาที</p>
+  //           <p style="color:#888; font-size:13px;">ถ้าไม่ได้ขอ ไม่ต้องสนใจอีเมลนี้</p>
+  //         </div>
+  //       `,
+  //     });
+
+  //     // บันทึก log เพื่อวัตถุประสงค์ในการดีบัก
+  //     console.log("✉️ Email sent to:", user.email);
+
+  //     // ส่งการตอบสนองดำเนินการสำเร็จ
+  //     res.json({ message: "Reset password link sent" });
+
+  //   } catch (err) {
+  //     // ==================== การจัดการข้อผิดพลาดในการส่งอีเมล ====================
+  //     /**
+  //      * หากการส่งอีเมลล้มเหลว จะล้างการเก็บ token ที่สร้างไว้
+  //      * เพื่อไม่ให้ผู้ใช้สามารถใช้ token ที่ไม่ได้รับอีเมลได้
+  //      */
+  //     user.resetPasswordToken = undefined;       // ล้าง token
+  //     user.resetPasswordExpire = undefined;      // ล้างเวลาหมดอายุ
+  //     await user.save({ validateBeforeSave: false });
+  //     console.error("EMAIL ERROR:", err.message);
+  //     console.error("EMAIL CONFIG:", {
+  //       user: process.env.GMAIL_USER,
+  //       hasPass: !!process.env.GMAIL_PASS,
+  //       clientUrl: process.env.CLIENT_URL,
+  //     });
+  //     // บันทึก error log
+  //     console.error("Email error:", err);
+
+  //     // ส่งข้อมูลข้อผิดพลาด
+  //     res.status(500).json({ message: "ส่งอีเมลไม่สำเร็จ กรุณาลองใหม่" });
+  //   }
+  // } catch (error) {
+  //   console.error("Forgot password error:", error);
+  //   res.status(500).json({ message: "Server error" });
+  // }
 };
 
 // ==================== ฟังก์ชัน RESET PASSWORD ====================

@@ -137,7 +137,7 @@ function AppRoutes() {
       <Route path="/forgot" element={token ? <Navigate to="/products" replace /> : <ForgotPage />} />
 
       {/* รีเซ็ตรหัสผ่าน - ไม่ต้องล็อกอิน (ลิงก์จากอีเมล) */}
-      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+      <Route path="/reset-password/:token/*" element={<ResetPasswordPage />} />
 
       {/* ═════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES - ต้องล็อกอิน */}
@@ -233,7 +233,10 @@ function AppRoutes() {
       } />
       {/* Fallback Route - ถ้า URL ไม่ตรงกับเส้นทางไหน */}
       {/* ถ้าล็อกอิน ให้พุ่งไป /products ถ้าไม่ ให้พุ่งไป /login */}
-      <Route path="*" element={<Navigate to={token ? "/products" : "/login"} replace />} />
+      <Route path="/" element={
+        token ? <Navigate to="/products" /> : <Navigate to="/login" />
+      } />
+      <Route path="*" element={<div>404 Not Found</div>} />
     </Routes>
   );
 }
